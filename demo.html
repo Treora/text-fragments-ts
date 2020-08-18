@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>Text Fragments playground</title>
+        <script src="./lib/polyfill.js" type="module"></script>
+        <style>
+            body {
+                margin: 0;
+                line-height: 1.8;
+                font-family: sans-serif;
+            }
+            main {
+                max-width: 30em;
+                margin: auto;
+                font-family: serif;
+            }
+            header {
+                background-color: linen;
+                padding: 1em;
+            }
+            header div {
+                max-width: 48em;
+                margin: auto;
+            }
+            aside {
+                background-color:floralwhite;
+                padding: 1em;
+            }
+            h2 {
+                font-size: 1em;
+            }
+            a {
+                text-decoration: none;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div>
+                <h1>Text Fragments playground</h1>
+                <p>
+                    This page demonstrates <a href="https://wicg.github.io/scroll-to-text-fragment/">Text Fragments</a> using the <a href="https://code.treora.com/gerben/text-fragments-ts">text-fragments-ts</a> implementation as a polyfill</a>.
+                </p>
+                <p style="background: whitesmoke; padding: 1em;">
+                    Is this page currently using the polyfill?
+                    <b id="usingPolyfill">
+                        <em>Detecting failed (or page is loading?)</em>
+                        <script>
+                            window.addEventListener('load', () => {
+                                const fragmentDirective = window.location.fragmentDirective;
+                                const message = (fragmentDirective
+                                    ? fragmentDirective._implementation === 'text-fragments-ts'
+                                        ? 'Yes'
+                                        : 'No <em>(your browser appears to support text fragments already!)</em>'
+                                    : 'No <em>(something went wrong?)</em>'
+                                );
+                                usingPolyfill.innerHTML = message;
+                            });
+                        </script>
+                        <noscript>No <em>(Javascript is disabled)</em></noscript>
+                    </b>
+                </p>
+                <p>
+                    Try click some of the links below: they point at specific quotes within this text, which the browser should then scroll to and highlight.
+                </p>
+                <ul>
+                    <li>
+                        <a href="#:~:text=semper ut commodo">Simple quote</a>
+                    </li>
+                    <li>
+                        <a href="#:~:text=placerat.%20Vivamus">Text spanning multiple elements</a>
+                    </li>
+                    <li>
+                        <a href="#:~:text=Cras%20et-,ipsum">Using prefix (pointing a specific occurrence of ‘ipsum’ by providing words before it)</a>
+                    </li>
+                    <li>
+                        <a href="#:~:text=ipsum,-sollicitudin">Using suffix (for the same ‘ipsum’)</a>
+                    </li>
+                    <li>
+                        <a href="#:~:text=sit-,amet,-auctor">Both prefix and suffix</a>
+                    </li>
+                    <li>
+                        <a href="#:~:text=word?-,Not%20sure.">Text making up a whole, reoccurring block element</a>
+                    </li>
+                    <li>
+                        <a href="#:~:text=Fusce%20quis,est.">Select text between two given phrases</a>
+                    </li>
+                    <li>
+                        <a href="#:~:text=Aliquam%20urna,scelerisque.">Text between two phrases in different block elements</a>
+                    </li>
+                    <li>
+                        <a href="#:~:text=GATTACA,CATATTAC">Select text between start and end of a long, uninterrupted string <em>(fails)</em></a>
+                    </li>
+                    <li>
+                        <a href="#:~:text=poi-,i,-nt">Point at letters (e.g. a typo) within a word <em>(fails)</em></a>
+                    </li>
+                </ul>
+                <p>
+                    You can also try write your own target quotes in the URL bar.
+                </p>
+            </div>
+        </header>
+        <!-- <aside>
+            <h2>Options</h2>
+            <input type="checkbox" id="checkboxWide" onchange="main.style.whiteSpace = this.checked ? 'nowrap' : null"> <label for="checkboxWide">Horizonal layout (to test scrolling)</label>
+            <script>checkboxWide.checked = false; // To ensure consistency when page is refreshed.</script>
+        </aside> -->
+        <main id="main">
+            <h1>Bla bla bla</h1>
+            <p>
+                Lorem ipsum dolor sit amet, <i>consectetur adipiscing elit</i>. Morbi ligula magna, semper a quam sit amet, malesuada tristique dui. Ut vitae diam massa. Proin gravida neque nec libero suscipit placerat. <b>Vivamus viverra <i>ligula vitae</i> orci fringilla vulputate</b>. Vivamus venenatis leo at venenatis venenatis. Mauris quam sem, sagittis sit amet mi quis, placerat laoreet eros. Suspendisse porta neque sit amet bibendum condimentum. Proin <a href="#:~:text=efficitur%20nulla%20aliquam">posuere purus</a> tellus, ac condimentum justo sollicitudin rhoncus. Integer nisl elit, convallis a velit nec, tristique convallis enim. Pellentesque placerat et purus <a href="#:~:text=semper%20ut%20commodo">porttitor tincidunt</a>.
+            </p>
+            <p>
+                Phasellus tempus dui vitae velit efficitur, nec volutpat lorem imperdiet. Aliquam hendrerit lectus at erat molestie, a porta ipsum interdum. Donec justo ex, porta sit amet ipsum eget, commodo ultrices ex. Integer dapibus euismod ante non ultrices. Donec commodo magna id turpis condimentum convallis. Quisque tincidunt quam vitae fringilla mattis. Aenean mattis commodo dolor ac imperdiet. Maecenas libero est, placerat porttitor libero quis, mollis condimentum nunc. Praesent in quam vel velit gravida cursus. Cras facilisis lectus in lectus pellentesque, at imperdiet odio elementum. Suspendisse pulvinar dui et ligula sagittis, nec tristique tellus congue. Aenean sed nulla in quam malesuada elementum in nec nulla. Aliquam sed cursus metus. Cras a molestie augue, id sodales velit. Proin blandit justo sed ante placerat consectetur. Aliquam urna purus, tempor eu cursus at, pharetra ac velit.
+            </p>
+            <p>
+                Proin accumsan mollis scelerisque. Sed id magna consectetur, tincidunt ipsum nec, semper velit. Morbi aliquam quis nisi non volutpat. Pellentesque a ultrices ante. In congue volutpat odio, vitae efficitur nulla aliquam quis. Vivamus cursus venenatis efficitur. Sed at ornare purus. Maecenas est justo, tincidunt ac convallis at, accumsan nec ipsum. Vestibulum tortor ligula, vestibulum a nisl sit amet, lobortis consectetur eros. Sed augue dui, porta at justo sit amet, venenatis convallis sapien. Praesent vel malesuada tortor, at iaculis diam.
+            </p>
+            <p>
+                Integer egestas, justo at vestibulum consequat, metus turpis aliquam felis, a tincidunt dui lorem eget orci. Fusce quis feugiat sapien, quis pharetra nulla. Sed suscipit mauris non tincidunt suscipit. Vestibulum nec mollis est. Donec eget interdum urna. Cras placerat nulla nec orci pretium blandit. Phasellus eget odio imperdiet, interdum tortor vel, convallis ante. Pellentesque tristique convallis ultrices. Cras et ipsum sollicitudin, elementum nulla tempus, tempor tellus. In hac habitasse platea dictumst. Nam in aliquam neque.
+            </p>
+            <p>
+                Vestibulum eu tristique elit. Sed ac ipsum sed sapien ultricies dapibus. Cras efficitur aliquet luctus. Aliquam sit amet auctor tellus, nec rhoncus nisl. Integer at lobortis sapien. Nunc mattis tristique libero, sed ultrices nunc imperdiet eu. Pellentesque accumsan, eros non auctor eleifend, felis massa bibendum lacus, non venenatis orci sapien eu sapien. Integer eu eros fringilla lectus vestibulum aliquam. Cras consectetur nunc nisi, vel molestie justo congue at. Duis eros neque, semper ut commodo in, molestie ut nunc. Vivamus vitae bibendum magna, suscipit sollicitudin elit. Praesent id rhoncus enim, sit amet suscipit velit. Aenean euismod purus velit, et consectetur nulla gravida vitae.
+            </p>
+            <p>
+                The Chrome-osome is GATTACAGACTGCGATACGTTACTAGTTAGGACTACGGGATCATATTAC. Can we select it without quoting the whole thing?
+            </p>
+            <p>
+                Not sure.
+            </p>
+            <p>
+                And how to poiint at letters (e.g. a typo) within a word?
+            </p>
+            <p>
+                Not sure.
+            </p>
+            <p>
+                Finally, <a href="#:~:text=Text%20Fragments%20playground">a link to scroll back up.</a>
+            </p>
+        </main>
+    </body>
+</html>
