@@ -4,7 +4,7 @@
 
 // An implementation of (most of) the Text Fragments draft spec.
 // See https://wicg.github.io/scroll-to-text-fragment/
-// Based on the version of 12 August 2020. <https://raw.githubusercontent.com/WICG/scroll-to-text-fragment/60f5f63b4997bde7e688cacf897e1167c622e100/index.html>
+// Based on the version of 13 August 2020. <https://raw.githubusercontent.com/WICG/scroll-to-text-fragment/2dcfbd6e272f51e5b250c58076b6d1cc57656fce/index.html>
 
 // Some terms used in the spec (would be great if these could be expressed more precisely in TypeScript)
 type nonEmptyString = string;
@@ -1005,23 +1005,25 @@ function isWordBounded(text: string, startPosition: integer, count: number, star
 
 // https://wicg.github.io/scroll-to-text-fragment/#feature-detectability
 // § 3.8. Feature Detectability
-// “For feature detectability, we propose adding a new FragmentDirective interface that is exposed via window.location.fragmentDirective if the UA supports the feature.”
-//     [Exposed=Window]
+// “For feature detectability, we propose adding a new FragmentDirective interface that is exposed via document.fragmentDirective if the UA supports the feature.
+//     [Exposed=Document]
 //     interface FragmentDirective {
 //     };
-// We amend the Location interface to include a fragmentDirective property:
-//     partial interface Location {
-//         [SameObject] readonly attribute FragmentDirective fragmentDirective
-//     ;
-//     };
+// We amend the Document interface to include a fragmentDirective property:
+//     partial interface Document {
+//         [SameObject] readonly attribute FragmentDirective fragmentDirective;
+//     };”
 export interface FragmentDirective {
 };
-// TODO Can and should we modify the Location interface?
+// TODO Can and should we modify the Document interface?
 
 export function browserSupportsTextFragments(): boolean {
-    return ('fragmentDirective' in window.location);
+    return (
+        'fragmentDirective' in Document
+        // Also check in window.location, which was in the spec until & including the version of 12 August 2020. See commit <https://github.com/WICG/scroll-to-text-fragment/commit/2dcfbd6e272f51e5b250c58076b6d1cc57656fce>.
+        || 'fragmentDirective' in window.location
+    );
 }
-
 
 
 

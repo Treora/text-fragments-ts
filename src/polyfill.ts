@@ -45,7 +45,7 @@ function pretendBrowserSupportsTextFragments(): void {
         enumerable: false,
     });
 
-    Object.defineProperty(window.location, 'fragmentDirective', {
+    Object.defineProperty(document, 'fragmentDirective', {
         value: fragmentDirective,
         writable: false,
     });
