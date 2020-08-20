@@ -59,7 +59,7 @@
                                 const message = (fragmentDirective
                                     ? fragmentDirective._implementation === 'text-fragments-ts'
                                         ? 'Yes'
-                                        : 'No <em>(your browser appears to support text fragments already!)</em>'
+                                        : 'Partially <em>(your browser appears to support text fragments already! But it might not work when clicking links that point to fragments within this same page, so the polyfill is invoked when clicking the links below)</em>'
                                     : 'No <em>(something went wrong?)</em>'
                                 );
                                 usingPolyfill.innerHTML = message;

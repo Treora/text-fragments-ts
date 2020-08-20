@@ -69,10 +69,35 @@ function highlightRanges(ranges: Range[]): void {
     }
 }
 
+// Listen to link clicks, and activate the polyfill when a link points to a fragment within the same page.
+function addLinkClickListeners() {
+    const linkElements = [
+        ...document.getElementsByTagName('a'),
+        ...document.getElementsByTagName('area'),
+    ]
+    linkElements.forEach(element => {
+        element.addEventListener('click', () => {
+            if (element.href.split('#')[0] === document.URL.split('#')[0]) {
+                const fragId = element.href.split('#')[1];
+                if (fragId && fragId.includes(':~:')) {
+                    const fragmentDirective = fragId.substring(fragId.indexOf(':~:') + 3);
+                    applyFragmentDirective({
+                        document,
+                        documentFragmentDirective: fragmentDirective,
+                    });
+                }
+            }
+        });
+    });
+}
+
 function install(): void {
-    // Do nothing if the browser already supports (text) fragment directives.
-    if (browserSupportsTextFragments())
+    if (browserSupportsTextFragments()) {
+        // Chromium’s implementation currently does not trigger when clicking links pointing to quotes within the same page. Use this as a workaround (listening to hashchange won’t help, as we cannot access the fragment directive).
+        addLinkClickListeners();
+
         return;
+    }
 
     pretendBrowserSupportsTextFragments();
 
