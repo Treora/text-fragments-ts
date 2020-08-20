@@ -48,7 +48,7 @@
                         <em>Detecting failed (or page is loading?)</em>
                         <script>
                             window.addEventListener('load', () => {
-                                const fragmentDirective = document.fragmentDirective;
+                                const fragmentDirective = document.fragmentDirective || window.location.fragmentDirective;
                                 const message = (fragmentDirective
                                     ? fragmentDirective._implementation === 'text-fragments-ts'
                                         ? 'Yes'
