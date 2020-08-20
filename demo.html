@@ -4,6 +4,13 @@
         <meta charset="utf-8"/>
         <title>Text Fragments playground</title>
         <script src="./lib/polyfill.js" type="module"></script>
+        <script>
+            (async function () {
+                const { applyFragDir } = await import('./lib/polyfill.js');
+                globalThis.applyFragDir = applyFragDir;
+                console.log(`You can try out fragment directives using applyFragDir(…); e.g. applyFragDir(':~:text=bla')`);
+            })();
+        </script>
         <style>
             body {
                 margin: 0;

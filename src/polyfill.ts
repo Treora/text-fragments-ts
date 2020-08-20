@@ -13,12 +13,18 @@ import {
 } from './index.js';
 
 function run(): void {
-    const { documentUrl, documentFragmentDirective } = initializeDocumentFragmentDirective(window.document) ?? {};
+    const { documentUrl, documentFragmentDirective } = initializeDocumentFragmentDirective(document) ?? {};
     if (documentUrl !== document.URL) {
         // We could change the location to hide the fragment directive from the fragment, as the spec prescribes; however this would also hide it from the user (and could trigger other event listeners).
         // document.location.replace(documentUrl);
     }
+    applyFragmentDirective({ document, documentFragmentDirective });
+}
 
+function applyFragmentDirective({ document, documentFragmentDirective } : {
+    document: Document,
+    documentFragmentDirective: string | null,
+}): void {
     if (documentFragmentDirective !== null) {
         const { documentIndicatedPart, ranges } = indicatedPartOfTheDocument_beginning({
             document,
@@ -80,3 +86,14 @@ function install(): void {
 }
 
 install();
+
+// A small tool to use from e.g. the browser console.
+export function applyFragDir(fragmentDirective: string) {
+    if (typeof fragmentDirective !== 'string' || !fragmentDirective.includes(':~:'))
+        throw new TypeError('Expected a fragment directive string, e.g. ":~:text=bla&text=blub"');
+    fragmentDirective = fragmentDirective.substring(fragmentDirective.indexOf(':~:') + 3);
+    applyFragmentDirective({
+        document,
+        documentFragmentDirective: fragmentDirective,
+    });
+}
