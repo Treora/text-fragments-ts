@@ -1,0 +1,1 @@
+{"version":3,"file":"whatwg-infra.js","sourceRoot":"","sources":["../src/whatwg-infra.ts"],"names":[],"mappings":"AAAE,gDAAgD;AACjD,gDAAgD;AACjD,gDAAgD;AAEhD,mIAAmI;AACnI,kDAAkD;AAClD,sFAAsF;AACtF,MAAM,CAAC,MAAM,eAAe,GAAG,gCAAgC,CAAC;AAEhE,gDAAgD;AAChD,0DAA0D;AAC1D,MAAM,CAAC,MAAM,aAAa,GAAG,8BAA8B,CAAC;AAE5D,+CAA+C;AAC/C,iEAAiE;AACjE,MAAM,CAAC,MAAM,YAAY,GAAG,sCAAsC,CAAC"}

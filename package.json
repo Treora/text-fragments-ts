@@ -1,0 +1,30 @@
+{
+  "name": "text-fragments-ts",
+  "version": "0.1.0",
+  "description": "The WICG’s Text Fragments draft specification, implemented in TypeScript",
+  "author": "Gerben",
+  "homepage": "https://code.treora.com/gerben/text-fragments-ts",
+  "repository": {
+    "type": "git",
+    "url": "https://code.treora.com/gerben/text-fragments-ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublish": "npm run build",
+    "publish": "publish-to-git"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./lib/index.js",
+    "./polyfill": "./lib/polyfill.js"
+  },
+  "module": "lib/index.js",
+  "files": [
+    "lib"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "publish-to-git": "^1.1.9",
+    "typescript": "^3.9.7"
+  }
+}
