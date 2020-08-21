@@ -6,18 +6,42 @@
 // See https://wicg.github.io/scroll-to-text-fragment/
 // Based on the version of 13 August 2020. <https://raw.githubusercontent.com/WICG/scroll-to-text-fragment/2dcfbd6e272f51e5b250c58076b6d1cc57656fce/index.html>
 
-// Some terms used in the spec (would be great if these could be expressed more precisely in TypeScript)
-type nonEmptyString = string;
-type nonNegativeInteger = number;
-type count = number; // same as nonNegativeInteger?
-type integer = number; // XXX each use in the spec looks like it should be a nonnegative integer.
+
+import {
+    nonEmptyString,
+    integer,
+    locale,
+    isElement,
+    nextNode,
+} from './common.js';
+
+import {
+    followsInTree,
+    nodeLength,
+    nextNodeInShadowIncludingTreeOrder,
+    isShadowIncludingDescendant,
+    isShadowIncludingInclusiveAncestor,
+    substringData,
+    BoundaryPoint,
+} from './whatwg-dom.js';
+
+import {
+    languageOf,
+    origin,
+    serializesAsVoid,
+    isBeingRendered,
+} from './whatwg-html.js';
+
+import {
+    htmlNamespace,
+} from './whatwg-infra.js';
 
 
 // § 3.3.1. Parsing the fragment directive
 
 // https://wicg.github.io/scroll-to-text-fragment/#fragment-directive-delimiter
 // “The fragment directive delimiter is the string ":~:", that is the three consecutive code points U+003A (:), U+007E (~), U+003A (:).”
-const fragmentDirectiveDelimiter = ':~:';
+export const fragmentDirectiveDelimiter = ':~:';
 
 // The function below implements most of the specified amendment to the ‘create and initialize a Document object’ steps. It applies the newly introduced steps on an ‘unmodified’ document. Instead of actually setting the document’s URL and fragment directive, it returns the values they should have obtained.
 // XXX Should the new procedure really “replace steps 7 and 8”? Which version of the HTML spec was this written for? In the version of 6 August 2020, steps 4, 5 and 9 seem more related.
@@ -85,7 +109,7 @@ export function initializeDocumentFragmentDirective(document: Document): { docum
 
 // https://wicg.github.io/scroll-to-text-fragment/#parse-a-text-directive
 // “To parse a text directive, on a string textDirectiveString, run these steps:”
-function parseTextDirective(textDirectiveInput: TextDirective): ParsedTextDirective | null { // XXX The spec writes “textDirectiveString” here, but probably meant “text directive input”.
+export function parseTextDirective(textDirectiveInput: TextDirective): ParsedTextDirective | null { // XXX The spec writes “textDirectiveString” here, but probably meant “text directive input”.
     // 1. “Assert: textDirectiveString matches the production TextDirective.” XXX again, this should be “text directive input” (Note the 'TextDirective' subtype of string is intended to express this assertion)
     // assert(isTextFragmentDirective(textDirectiveInput));
 
@@ -150,7 +174,7 @@ function parseTextDirective(textDirectiveInput: TextDirective): ParsedTextDirect
 
 // https://wicg.github.io/scroll-to-text-fragment/#parsedtextdirective
 // “A ParsedTextDirective is a struct that consists of four strings: textStart, textEnd, prefix, and suffix. textStart is required to be non-null. The other three items may be set to null, indicating they weren’t provided. The empty string is not a valid value for any of these items.”
-interface ParsedTextDirective {
+export interface ParsedTextDirective {
     textStart: nonEmptyString;
     textEnd: nonEmptyString | null;
     prefix: nonEmptyString | null;
@@ -162,17 +186,16 @@ interface ParsedTextDirective {
 
 // https://wicg.github.io/scroll-to-text-fragment/#valid-fragment-directive
 // “A valid fragment directive is a sequence of characters that appears in the fragment directive that matches the production:”
-type ValidFragmentDirective = string;  // could be `unique string`, when (if) TypeScript will support that.
-function isValidFragmentDirective(input: string | null): input is ValidFragmentDirective {
+export type ValidFragmentDirective = string;  // could be `unique string`, when (if) TypeScript will support that.
+export function isValidFragmentDirective(input: string | null): input is ValidFragmentDirective {
     // TODO (use PEG.js?)
     return true; // TEMP
 }
 
 // https://wicg.github.io/scroll-to-text-fragment/#text-fragment-directive
 // “The text fragment directive is one such fragment directive that enables specifying a piece of text on the page, that matches the production:”
-type TextDirective = string; // could be `unique string`, when (if) TypeScript will support that.
-
-function isTextFragmentDirective(input: string): input is TextDirective {
+export type TextDirective = string; // could be `unique string`, when (if) TypeScript will support that.
+export function isTextFragmentDirective(input: string): input is TextDirective {
     // TODO (use PEG.js?)
     return input.startsWith('text='); // TEMP
 }
@@ -300,7 +323,7 @@ export function indicatedPartOfTheDocument_beginning(
 
 // https://wicg.github.io/scroll-to-text-fragment/#first-common-ancestor
 // To find the first common ancestor of two nodes nodeA and nodeB, follow these steps:
-function firstCommonAncestor(nodeA: Node, nodeB: Node): Node | never {
+export function firstCommonAncestor(nodeA: Node, nodeB: Node): Node | never {
     // 1. “Let commonAncestor be nodeA.”
     let commonAncestor = nodeA;
 
@@ -314,7 +337,7 @@ function firstCommonAncestor(nodeA: Node, nodeB: Node): Node | never {
 }
 
 // To find the shadow-including parent of node follow these steps:
-function shadowIncludingParent(node: Node): Node | null {
+export function shadowIncludingParent(node: Node): Node | null {
     // 1. “If node is a shadow root, return node’s host.”
     if (node instanceof ShadowRoot)
         return node.host;
@@ -329,7 +352,7 @@ function shadowIncludingParent(node: Node): Node | null {
 // https://wicg.github.io/scroll-to-text-fragment/#scroll-a-domrect-into-view
 // “Move the scroll an element into view algorithm’s steps 3-14 into a new algorithm scroll a DOMRect into view, with input DOMRect bounding box, ScrollIntoViewOptions dictionary options, and element startingElement.”
 // “Also move the recursive behavior described at the top of the scroll an element into view algorithm to the scroll a DOMRect into view algorithm: "run these steps for each ancestor element or viewport of startingElement that establishes a scrolling box scrolling box, in order of innermost to outermost scrolling box".”
-function scrollDomRectIntoView(boundingBox: DOMRect, options: ScrollIntoViewOptions, startingElement: Element): void {
+export function scrollDomRectIntoView(boundingBox: DOMRect, options: ScrollIntoViewOptions, startingElement: Element): void {
     // TODO Create/borrow a complete implementation.
     // TEMP assume the window is the only scrolling box, block=vertical and inline=horizontal, …
     function applyScrollLogicalPosition({
@@ -390,7 +413,7 @@ function scrollDomRectIntoView(boundingBox: DOMRect, options: ScrollIntoViewOpti
 // “Replace steps 3-14 of the scroll an element into view algorithm with a call to scroll a DOMRect into view:”
 // (note the recursive behaviour is already removed due to the lines above)
 // Basing on the <https://drafts.csswg.org/cssom-view-1/#scroll-an-element-into-view> version of 20 February 2020
-function scrollElementIntoView(element: Element, behavior: ScrollBehavior, block: ScrollLogicalPosition, inline: ScrollLogicalPosition) {
+export function scrollElementIntoView(element: Element, behavior: ScrollBehavior, block: ScrollLogicalPosition, inline: ScrollLogicalPosition) {
     // 1. (from original) “If the Document associated with element is not same origin with the Document associated with the element or viewport associated with box, terminate these steps.”
     // TODO (if this makes sense here at all?)
 
@@ -404,7 +427,7 @@ function scrollElementIntoView(element: Element, behavior: ScrollBehavior, block
 
 // https://wicg.github.io/scroll-to-text-fragment/#scroll-a-range-into-view
 // “Define a new algorithm scroll a Range into view, with input range range, element containingElement, and a ScrollIntoViewOptions dictionary options:”
-function scrollRangeIntoView(range: Range, containingElement: Element, options: ScrollIntoViewOptions): void {
+export function scrollRangeIntoView(range: Range, containingElement: Element, options: ScrollIntoViewOptions): void {
     // 1. “Let bounding rect be the DOMRect that is the return value of invoking getBoundingClientRect() on range.”
     const boundingRect = range.getBoundingClientRect();
 
@@ -591,7 +614,7 @@ export function findRangeFromTextDirective(parsedValues: ParsedTextDirective, do
 
 // https://wicg.github.io/scroll-to-text-fragment/#next-non-whitespace-position
 // “To advance a range range’s start to the next non-whitespace position follow the steps:”
-function advanceRangeStartToNextNonWhitespacePosition(range: Range) {
+export function advanceRangeStartToNextNonWhitespacePosition(range: Range) {
     // 1. “While range is not collapsed:”
     while (!range.collapsed) {
         // 1. “Let node be range’s start node.”
@@ -659,7 +682,7 @@ function advanceRangeStartToNextNonWhitespacePosition(range: Range) {
 
 // https://wicg.github.io/scroll-to-text-fragment/#find-a-string-in-range
 // To find a string in range for a string query in a given range range, run these steps:
-function findStringInRange(query: string, searchRange: Range): Range | null { // XXX The spec calls it 'range' here, but 'searchRange' afterwards.
+export function findStringInRange(query: string, searchRange: Range): Range | null { // XXX The spec calls it 'range' here, but 'searchRange' afterwards.
     // 1. “While searchRange is not collapsed:”
     while (!searchRange.collapsed) {
         // 1. “Let curNode be searchRange’s start node.”
@@ -763,7 +786,7 @@ function findStringInRange(query: string, searchRange: Range): Range | null { //
 
 // https://wicg.github.io/scroll-to-text-fragment/#search-invisible
 // “A node is search invisible…”
-function isSearchInvisible(node: Node): boolean {
+export function isSearchInvisible(node: Node): boolean {
     // “…if it is in the HTML namespace and meets any of the following conditions:”
     // XXX Namespace for nodes is inapplicable/deprecated? Presuming this was meant: “…if it is an element in the HTML namespace…”
     if (isElement(node) && node.namespaceURI === htmlNamespace) {
@@ -789,7 +812,7 @@ function isSearchInvisible(node: Node): boolean {
 
 // https://wicg.github.io/scroll-to-text-fragment/#non-searchable-subtree
 // “A node is part of a non-searchable subtree if it is or has an ancestor that is search invisible.”
-function partOfNonSearchableSubtree(node: Node): boolean {
+export function partOfNonSearchableSubtree(node: Node): boolean {
     let curNode: Node | null = node;
     while (curNode) {
         if (isSearchInvisible(curNode))
@@ -802,8 +825,8 @@ function partOfNonSearchableSubtree(node: Node): boolean {
 
 // https://wicg.github.io/scroll-to-text-fragment/#visible-text-node
 // “A node is a visible text node if it is a Text node, the computed value of its visibility property is visible, and it is being rendered.”
-type VisibleTextNode = Text; // could be `unique Text`, when (if) TypeScript will support that.
-function isVisibleTextNode(node: Node): node is VisibleTextNode {
+export type VisibleTextNode = Text; // could be `unique Text`, when (if) TypeScript will support that.
+export function isVisibleTextNode(node: Node): node is VisibleTextNode {
     if (node.nodeType !== Node.TEXT_NODE)
         return false;
 
@@ -820,7 +843,7 @@ function isVisibleTextNode(node: Node): node is VisibleTextNode {
 
 // https://wicg.github.io/scroll-to-text-fragment/#has-block-level-display
 // “A node has block-level display if the computed value of its display property is any of block, table, flow-root, grid, flex, list-item.”
-function hasBlockLevelDisplay(node: Node): boolean {
+export function hasBlockLevelDisplay(node: Node): boolean {
     // XXX How is “the computed value of its display property” defined for non-element nodes? Assuming here it only applies to elements!
     return (
         isElement(node)
@@ -830,7 +853,7 @@ function hasBlockLevelDisplay(node: Node): boolean {
 
 // https://wicg.github.io/scroll-to-text-fragment/#nearest-block-ancestor
 // “To find the nearest block ancestor of a node follow the steps:”
-function nearestBlockAncestorOf(node: Node): Node {
+export function nearestBlockAncestorOf(node: Node): Node {
     // 1. “While node is non-null”
     // XXX We replace node with a new variable curNode for walking up the tree, as we will still need a non-null node in step 2 (and also it needs the type Node | null).
     let curNode: Node | null = node;
@@ -852,7 +875,7 @@ function nearestBlockAncestorOf(node: Node): Node {
 
 // https://wicg.github.io/scroll-to-text-fragment/#find-a-range-from-a-node-list
 // “To find a range from a node list given a search string queryString, a range searchRange, and a list of nodes nodes, follow the steps”
-function findARangeFromANodeList(queryString: string, searchRange: Range, nodes: Text[]): Range | null {
+export function findARangeFromANodeList(queryString: string, searchRange: Range, nodes: Text[]): Range | null {
     // 1. “Assert: each item in nodes is a Text node.”
     // XXX Could this not just be asserted through the parameter type, like is done in “get boundary point at index”? Applying this already.
     // assert(nodes.every(node => node.nodeType === Node.TEXT_NODE));
@@ -937,7 +960,7 @@ function findARangeFromANodeList(queryString: string, searchRange: Range, nodes:
 
 // https://wicg.github.io/scroll-to-text-fragment/#get-boundary-point-at-index
 // “To get boundary point at index, given an integer index, list of Text nodes nodes, and a boolean isEnd, follow these steps:”
-function getBoundaryPointAtIndex(index: integer, nodes: Text[], isEnd: boolean): BoundaryPoint | null {
+export function getBoundaryPointAtIndex(index: integer, nodes: Text[], isEnd: boolean): BoundaryPoint | null {
     // 1. “Let counted be 0.”
     let counted = 0;
 
@@ -973,9 +996,8 @@ function getBoundaryPointAtIndex(index: integer, nodes: Text[], isEnd: boolean):
 
 // “startLocale and endLocale must be a valid [BCP47] language tag, or the empty string. An empty string indicates that the primary language is unknown.” <https://tools.ietf.org/html/bcp47>
 // XXX Is this, or should this be a step? (should locale strings be validated?)
-type locale = string;
 
-function isWordBounded(text: string, startPosition: integer, count: number, startLocale: locale, endLocale: locale): boolean {
+export function isWordBounded(text: string, startPosition: integer, count: number, startLocale: locale, endLocale: locale): boolean {
     // 1. “Using locale startLocale, let left bound be the last word boundary in text that precedes startPositionth code point of text.”
     // XXX It seems that “startPositionth” involves zero-based indexing; is that considered self-evident?
     const leftBound = nearestWordBoundary(text, startPosition, 'before', startLocale);
@@ -1027,296 +1049,10 @@ export function browserSupportsTextFragments(): boolean {
 
 
 
-  /////////////////////////////////////////////
- // Required pieces of the WHATWG DOM spec ///
-/////////////////////////////////////////////
-
-// Based on the version of 29 June 2020 <https://dom.spec.whatwg.org/commit-snapshots/e191f73a0fcc09c48f9e962188748f811b09c239/>
-
-// https://dom.spec.whatwg.org/#concept-tree-descendant
-// “An object A is called a descendant of an object B, if either A is a child of B or A is a child of an object C that is a descendant of B.”
-function isDescendant(nodeA: Node, nodeB: Node): boolean {
-    if (nodeA.parentNode === nodeB)
-        return true;
-    const nodeC = nodeA.parentNode;
-    if (nodeC && isDescendant(nodeC, nodeB))
-        return true;
-    return false;
-}
-
-// https://dom.spec.whatwg.org/#concept-tree-following
-// “An object A is following an object B if A and B are in the same tree and A comes after B in tree order.”
-function followsInTree(nodeA: Node, nodeB: Node): boolean {
-    return !!(nodeB.compareDocumentPosition(nodeA) & Node.DOCUMENT_POSITION_FOLLOWING);
-}
-
-// https://dom.spec.whatwg.org/#concept-node-length
-// “To determine the length of a node node, switch on node:”
-function nodeLength(node: Node): number {
-    switch (node.nodeType) {
-        // “DocumentType”
-        case Node.DOCUMENT_TYPE_NODE:
-            // “Zero.”
-            return 0;
-        // “Text”
-        case Node.TEXT_NODE:
-        // “ProcessingInstruction”
-        case Node.PROCESSING_INSTRUCTION_NODE:
-        // “Comment”
-        case Node.COMMENT_NODE:
-            // “Its data’s length.”
-            return (node as CharacterData).data.length;
-        // “Any other node”
-        default:
-            // “Its number of children.”
-            return node.childNodes.length;
-    }
-}
-
-// https://dom.spec.whatwg.org/#concept-shadow-including-tree-order
-// “In shadow-including tree order is shadow-including preorder, depth-first traversal of a node tree. Shadow-including preorder, depth-first traversal of a node tree tree is preorder, depth-first traversal of tree, with for each shadow host encountered in tree, shadow-including preorder, depth-first traversal of that element’s shadow root’s node tree just after it is encountered.”
-function nextNodeInShadowIncludingTreeOrder(node: Node): Node | null {
-    if (isShadowHost(node)) {
-        return nextNodeInShadowIncludingTreeOrder(node.shadowRoot);
-    } else {
-        return nextNode(node);
-    }
-}
-
-// https://dom.spec.whatwg.org/#element-shadow-host
-// “An element is a shadow host if its shadow root is non-null.”
-// FIXME (WONTFIX?) Element.shadowRoot is also null if the ShadowRoot exists but its mode is 'closed'. Is there any way around this?
-// XXX Might it be desirable to exclude closed shadow roots from a text fragment search?
-type ShadowHost = Element & { shadowRoot: ShadowRoot }
-function isShadowHost(node: Node): node is ShadowHost {
-    return (isElement(node) && node.shadowRoot !== null);
-}
-
-// https://dom.spec.whatwg.org/#concept-shadow-including-descendant
-// “An object A is a shadow-including descendant of an object B, if A is a descendant of B, or A’s root is a shadow root and A’s root’s host is a shadow-including inclusive descendant of B.”
-function isShadowIncludingDescendant(nodeA: Node, nodeB: Node): boolean {
-    if (isDescendant(nodeA, nodeB))
-        return true;
-    const nodeARoot = nodeA.getRootNode();
-    if (nodeARoot instanceof ShadowRoot && isShadowIncludingInclusiveDescendant(nodeARoot.host, nodeB))
-        return true;
-    return false;
-}
-
-// https://dom.spec.whatwg.org/#concept-shadow-including-inclusive-descendant
-// “A shadow-including inclusive descendant is an object or one of its shadow-including descendants.”
-function isShadowIncludingInclusiveDescendant(nodeA: Node, nodeB: Node): boolean {
-    if (nodeA === nodeB)
-        return true;
-    if (isShadowIncludingDescendant(nodeA, nodeB))
-        return true;
-    return false;
-}
-
-// https://dom.spec.whatwg.org/#concept-shadow-including-ancestor
-// “An object A is a shadow-including ancestor of an object B, if and only if B is a shadow-including descendant of A.”
-function isShadowIncludingAncestor(nodeA: Node, nodeB: Node): boolean {
-    return isShadowIncludingDescendant(nodeB, nodeA);
-}
-
-// https://dom.spec.whatwg.org/#concept-shadow-including-inclusive-ancestor
-// “A shadow-including inclusive ancestor is an object or one of its shadow-including ancestors.”
-function isShadowIncludingInclusiveAncestor(nodeA: Node, nodeB: Node): boolean {
-    if (nodeA === nodeB)
-        return true;
-    if (isShadowIncludingAncestor(nodeA, nodeB))
-        return true;
-    return false;
-}
-
-// https://dom.spec.whatwg.org/#concept-cd-substring
-// “To substring data with node node, offset offset, and count count, run these steps:”
-function substringData(
-    node: CharacterData, // XXX The spec says “node node”, but reads “node’s data” which is only defined for CharacterData nodes.
-    offset: number,
-    count: count
-): string {
-    // 1. “Let length be node’s length.”
-    const length = nodeLength(node);
-    // 2. “If offset is greater than length, then throw an "IndexSizeError" DOMException.”
-    if (offset > length)
-        throw new DOMException('', 'IndexSizeError');
-    // 3. “If offset plus count is greater than length, return a string whose value is the code units from the offsetth code unit to the end of node’s data, and then return.”
-    if (offset + count > length) {
-        return node.data.substring(offset);
-    }
-    // TODO verify: “Return a string whose value is the code units from the offsetth code unit to the offset+countth code unit in node’s data.”
-    return node.data.substring(offset, offset + count);
-}
-
-// https://dom.spec.whatwg.org/#concept-range-bp
-// “A boundary point is a tuple consisting of a node (a node) and an offset (a non-negative integer).”
-type BoundaryPoint = [Node, nonNegativeInteger];
-
-
-
-  ///////////////////////////////////////////////
- /// Required pieces of the WHATWG HTML Spec ///
-///////////////////////////////////////////////
-
-// Based on the version of 13 August 2020 <https://html.spec.whatwg.org/commit-snapshots/3c52fe139d9c637eb901932a77d743d6d5ecaa56/>
-
-// § 3.2.6.2 The lang and xml:lang attributes
-// https://html.spec.whatwg.org/multipage/dom.html#language
-function languageOf(node: Node): locale {
-    // “To determine the language of a node, user agents must look at the nearest ancestor element (including the element itself if the node is an element) that has a lang attribute in the XML namespace set or is an HTML element and has a lang in no namespace attribute set. That attribute specifies the language of the node (regardless of its value).”
-    let curNode: Node | null = node;
-    while (curNode !== null) {
-        if (isElement(curNode)) {
-            // “If both the lang attribute in no namespace and the lang attribute in the XML namespace are set on an element, user agents must use the lang attribute in the XML namespace, and the lang attribute in no namespace must be ignored for the purposes of determining the element's language.”
-            const language = curNode.getAttributeNS(xmlNamespace, 'lang') ?? curNode.getAttributeNS(null, 'lang');
-            if (language !== null)
-                return language;
-        }
-        curNode = curNode.parentNode;
-    }
-
-    // “If node's inclusive ancestors do not have either attribute set, but there is a pragma-set default language set, then that is the language of the node.”
-    const pragmaSetDefaultLanguage = getPragmaSetDefaultLanguage();
-    if (pragmaSetDefaultLanguage !== undefined)
-        return pragmaSetDefaultLanguage;
-
-    // “If there is no pragma-set default language set, then language information from a higher-level protocol (such as HTTP), if any, must be used as the final fallback language instead.”
-    // Probably not available to us. (well, perhaps we could try fetch document.URL from cache and read its headers…)
-
-    // “In the absence of any such language information, and in cases where the higher-level protocol reports multiple languages, the language of the node is unknown, and the corresponding language tag is the empty string.”
-    return '';
-}
-
-
-// § 4.2.5.3 Pragma directives
-// https://html.spec.whatwg.org/multipage/semantics.html#pragma-set-default-language
-// This implementation is a workaround, since we cannot read the pragma-set default language from the DOM. We simply rerun the steps the user agent should have executed to determine this value, when the corresponding <meta> elements are inserted into the document.
-// (note that we assume the meta elements were not modified after creation; in scenarios with attribute modifications our result could deviate from the correct result)
-function getPragmaSetDefaultLanguage(): string | undefined {
-    // “Content language state (http-equiv="content-language")”
-    // “This pragma sets the pragma-set default language. Until such a pragma is successfully processed, there is no pragma-set default language.”
-    let pragmaSetDefaultLanguage: string | undefined = undefined;
-
-    const metaElements = document.querySelectorAll('meta[http-equiv="content-language"]');
-    metaElements.forEach(element => {
-
-        // 1. “If the meta element has no content attribute, then return.”
-        if (element.hasAttribute('content'))
-            return;
-
-        // 3. “Let input be the value of the element's content attribute.”
-        // (swapping the order for implementation simplicity)
-        const input = element.getAttribute('content') as string;
-
-        // 2. “If the element's content attribute contains a U+002C COMMA character (,) then return.”
-        if (input.includes(','))
-            return;
-
-        // 4. “Let position point at the first character of input.”
-        let position = 0;
-
-        // 5. “Skip ASCII whitespace within input given position.”
-        while (position < input.length && AsciiWhitespace.includes(input[position]))
-            position++;
-
-        // 6. “Collect a sequence of code points that are not ASCII whitespace from input given position.”
-        // 7. “Let candidate be the string that resulted from the previous step.”
-        let candidate = '';
-        while (!AsciiWhitespace.includes(input[position])) {
-            candidate += input[position];
-            position++;
-        }
-
-        // 8. “If candidate is the empty string, return.”
-        if (candidate === '')
-            return;
-
-        // 9. “Set the pragma-set default language to candidate.”
-        pragmaSetDefaultLanguage = candidate;
-    });
-
-    return pragmaSetDefaultLanguage as string | undefined;
-}
-
-
-// § 7.5 Origin
-// https://html.spec.whatwg.org/multipage/origin.html#concept-origin
-type origin = opaqueOrigin | tupleOrigin
-// “An opaque origin”: “An internal value, with no serialization it can be recreated from (it is serialized as "null" per serialization of an origin), for which the only meaningful operation is testing for equality.”
-type opaqueOrigin = symbol; // I guess?
-// “A tuple consists of:
-//   • A scheme (a scheme).
-//   • A host (a host).
-//   • A port (a port).
-//   • A domain (null or a domain). Null unless stated otherwise.”
-type tupleOrigin = [
-    // (using primitive types here; specifying these further is beyond scope)
-    string,
-    string | integer | integer[], // integers for IP addresses
-    integer | null,
-    nonEmptyString | null,
-];
-
-
-// § 12.1.2 Elements
-// https://html.spec.whatwg.org/multipage/syntax.html#void-elements
-const voidElements = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
-
-
-// § 12.2 Parsing HTML documents
-// https://html.spec.whatwg.org/multipage/parsing.html#serializes-as-void
-// “For the purposes of the following algorithm, an element serializes as void if its element type is one of the void elements, or is basefont, bgsound, frame, or keygen.”
-function serializesAsVoid(element: Element): boolean {
-    // From § 2.1.3 XML Compatibility, <https://html.spec.whatwg.org/multipage/infrastructure.html#element-type>:
-    // “The term element type is used to refer to the set of elements that have a given local name and namespace.”
-    // “Except where otherwise stated, all elements defined or mentioned in this specification are in the HTML namespace ("http://www.w3.org/1999/xhtml")”
-    if (element.namespaceURI === htmlNamespace
-        && (voidElements.includes(element.localName) || ['basefont', 'bgsound', 'frame', 'keygen'].includes(element.localName))
-    ) {
-        return true;
-    }
-    return false;
-}
-
-
-// § 14.1 Rendering → Introduction
-// https://html.spec.whatwg.org/multipage/rendering.html#being-rendered
-// “An element is being rendered if it has any associated CSS layout boxes, SVG layout boxes, or some equivalent in other styling languages.”
-function isBeingRendered(element: Element) {
-    // “Note … The presence of the hidden attribute normally means the element is not being rendered, though this might be overridden by the style sheets.”
-    // TODO figure out what exactly we should/could test.
-    return !element.hasAttribute('hidden'); // TEMP
-}
-
-
-
-  ////////////////////////////////////////////////
- /// Required pieces of the WHATWG Infra Spec ///
-////////////////////////////////////////////////
-
-// Based on the version of 6 August 2020 <https://infra.spec.whatwg.org/commit-snapshots/38caa3d54ec94b757326b18b0b6cfb39c454f1de/>
-// https://infra.spec.whatwg.org/#ascii-whitespace
-// “ASCII whitespace is U+0009 TAB, U+000A LF, U+000C FF, U+000D CR, or U+0020 SPACE.”
-const AsciiWhitespace = '\u0009\u000a\u000c\u000d\u0020';
-
-// https://infra.spec.whatwg.org/#html-namespace
-// “The HTML namespace is "http://www.w3.org/1999/xhtml".”
-const htmlNamespace = 'http://www.w3.org/1999/xhtml';
-
-// https://infra.spec.whatwg.org/#xml-namespace
-// “The XML namespace is "http://www.w3.org/XML/1998/namespace".”
-const xmlNamespace = 'http://www.w3.org/XML/1998/namespace';
-
-
   //////////////////////////////////////
  /// Simple helpers for readability ///
 //////////////////////////////////////
 
-
-function isElement(node: Node): node is Element {
-    return node.nodeType === Node.ELEMENT_NODE
-}
 
 function getStart(range: Range): BoundaryPoint {
     return [range.startContainer, range.startOffset];
@@ -1371,12 +1107,6 @@ function firstBoundaryPointAfter([node, offset]: BoundaryPoint): BoundaryPoint |
         else
             return null;
     }
-}
-
-function nextNode(node: Node): Node | null {
-    const walker = (node.ownerDocument ?? node as Document).createTreeWalker(node.getRootNode());
-    walker.currentNode = node;
-    return walker.nextNode();
 }
 
 // XXX Is this supposed to be self-evident, or should these steps perhaps be included in the spec?
