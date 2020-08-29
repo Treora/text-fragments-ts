@@ -25,12 +25,6 @@ export function isDescendant(nodeA: Node, nodeB: Node): boolean {
     return false;
 }
 
-// https://dom.spec.whatwg.org/#concept-tree-following
-// “An object A is following an object B if A and B are in the same tree and A comes after B in tree order.”
-export function followsInTree(nodeA: Node, nodeB: Node): boolean {
-    return !!(nodeB.compareDocumentPosition(nodeA) & Node.DOCUMENT_POSITION_FOLLOWING);
-}
-
 // https://dom.spec.whatwg.org/#concept-node-length
 // “To determine the length of a node node, switch on node:”
 export function nodeLength(node: Node): number {

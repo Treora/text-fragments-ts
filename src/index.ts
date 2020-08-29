@@ -4,7 +4,7 @@
 
 // An implementation of (most of) the Text Fragments draft spec.
 // See https://wicg.github.io/scroll-to-text-fragment/
-// Based on the version of 13 August 2020. <https://raw.githubusercontent.com/WICG/scroll-to-text-fragment/2dcfbd6e272f51e5b250c58076b6d1cc57656fce/index.html>
+// Based on the version of 28 August 2020. <https://raw.githubusercontent.com/WICG/scroll-to-text-fragment/2475249f76ba20a6e6272e91853001155fdc3d22/index.html>
 
 
 import {
@@ -14,7 +14,6 @@ import {
 } from './common.js';
 
 import {
-    followsInTree,
     nodeLength,
     nextNodeInShadowIncludingTreeOrder,
     isShadowIncludingDescendant,
@@ -67,14 +66,14 @@ export function initializeDocumentFragmentDirective(document: Document): { docum
     // (as we only have access to the serialised URL, we extract the fragment again)
     const rawFragment = url.split('#')[1] ?? null;
 
-    // XXX The spec seems to neglect that a URL’s fragment can be null (or is it somehow guaranteed to be non-null?). If it is null, I suppose we should skip the subsequent steps.
+    // 11. “If raw fragment is non-null:”
     if (rawFragment !== null) {
 
         // (a sane implementation would simply use rawFragment.indexOf(…) or rawFragment.split(…) instead the steps below)
-        // 11. “Let fragmentDirectivePosition be an integer initialized to 0.”
+        // 1. “Let fragmentDirectivePosition be an integer initialized to 0.”
         let fragmentDirectivePosition = 0;
 
-        // 12. “While the substring of raw fragment starting at position fragmentDirectivePosition does not begin with the fragment directive delimiter and fragmentDirectivePosition does not point past the end of raw fragment:”
+        // 2. “While the substring of raw fragment starting at position fragmentDirectivePosition does not begin with the fragment directive delimiter and fragmentDirectivePosition does not point past the end of raw fragment:”
         while (
             !rawFragment.substring(fragmentDirectivePosition).startsWith(fragmentDirectiveDelimiter)
             && !(fragmentDirectivePosition >= rawFragment.length)
@@ -83,7 +82,7 @@ export function initializeDocumentFragmentDirective(document: Document): { docum
             fragmentDirectivePosition += 1;
         }
 
-        // 13. “If fragmentDirectivePosition does not point past the end of raw fragment:”
+        // 3. “If fragmentDirectivePosition does not point past the end of raw fragment:”
         if (!(fragmentDirectivePosition >= rawFragment.length)) {
             // 1. “Let fragment be the substring of raw fragment starting at 0 of count fragmentDirectivePosition.”
             const fragment = rawFragment.substring(0, 0 + fragmentDirectivePosition);
@@ -100,7 +99,7 @@ export function initializeDocumentFragmentDirective(document: Document): { docum
 
     }
 
-    // 14. “Set document’s URL to be url.”
+    // 12. “Set document’s URL to be url.”
     documentUrl = url;
 
     // For testing/trying purposes, we return what should now be the document’s URL and fragment directive.
@@ -108,9 +107,9 @@ export function initializeDocumentFragmentDirective(document: Document): { docum
 }
 
 // https://wicg.github.io/scroll-to-text-fragment/#parse-a-text-directive
-// “To parse a text directive, on a string textDirectiveString, run these steps:”
-export function parseTextDirective(textDirectiveInput: TextDirective): ParsedTextDirective | null { // XXX The spec writes “textDirectiveString” here, but probably meant “text directive input”.
-    // 1. “Assert: textDirectiveString matches the production TextDirective.” XXX again, this should be “text directive input” (Note the 'TextDirective' subtype of string is intended to express this assertion)
+// “To parse a text directive, on a string text directive input, run these steps:”
+export function parseTextDirective(textDirectiveInput: TextDirective): ParsedTextDirective | null {
+    // 1. “Assert: text directive input matches the production TextDirective.”
     // assert(isTextFragmentDirective(textDirectiveInput));
 
     // 2. “Let textDirectiveString be the substring of text directive input starting at index 5.”
@@ -141,7 +140,7 @@ export function parseTextDirective(textDirectiveInput: TextDirective): ParsedTex
     // 8. “If the last character of potential prefix is U+002D (-), then:”
     if (potentialPrefix.endsWith('-')) {
         // 1. “Set retVal’s prefix to the result of removing the last character from potential prefix.
-        retVal.prefix = decodeURIComponent(potentialPrefix.substring(0, potentialPrefix.length - 1)); // XXX spec forgets “…the percent-decoding of…”
+        retVal.prefix = decodeURIComponent(potentialPrefix.substring(0, potentialPrefix.length - 1));
         // 2. “Remove the first item of the list tokens.”
         tokens.shift();
     }
@@ -152,7 +151,7 @@ export function parseTextDirective(textDirectiveInput: TextDirective): ParsedTex
     // 10. “If potential suffix is non-null and its first character is U+002D (-), then:”
     if (potentialSuffix !== null && potentialSuffix.startsWith('-')) {
         // 1. “Set retVal’s suffix to the result of removing the first character from potential suffix.”
-        retVal.suffix = decodeURIComponent(potentialSuffix.substring(1)); // XXX spec forgets “…the percent-decoding of…”
+        retVal.suffix = decodeURIComponent(potentialSuffix.substring(1));
         // 2. “Remove the last item of the list tokens.”
         tokens.pop();
     }
@@ -162,11 +161,11 @@ export function parseTextDirective(textDirectiveInput: TextDirective): ParsedTex
         return null;
 
     // 12. “Set retVal’s textStart be the first item of tokens.”
-    retVal.textStart = decodeURIComponent(tokens[0]); // XXX spec forgets “…the percent-decoding of…”
+    retVal.textStart = decodeURIComponent(tokens[0]);
 
     // 13. “If tokens has size 2, then set retVal’s textEnd be the last item of tokens.”
     if (tokens.length === 2)
-        retVal.textEnd = decodeURIComponent(tokens[tokens.length - 1]); // XXX spec forgets “…the percent-decoding of…”
+        retVal.textEnd = decodeURIComponent(tokens[tokens.length - 1]);
 
     // 14. “Return retVal.”
     return retVal as ParsedTextDirective;
@@ -210,9 +209,6 @@ export function scrollToTheFragment(indicatedPart: [Element, Range | null]): voi
 
     // “Replace step 3.1 of the scroll to the fragment algorithm with the following:”
 
-    // 3. “Otherwise:”
-    // XXX this line above seems superfluous (and possibly confusing).
-
     // 1. (new) “Let target, range be the element and range that is the indicated part of the document.”
     const [target, range] = indicatedPart;
 
@@ -226,8 +222,7 @@ export function scrollToTheFragment(indicatedPart: [Element, Range | null]): voi
 
     // 4. (new) “If range is non-null:”
     if (range !== null) {
-        // 1. “If the UA supports scrolling of text fragments on navigation, invoke Scroll range into view, with containingElement target, behavior set to "auto", block set to "center", and inline set to "nearest".”
-        // XXX …and “with range range”?
+        // 1. “If the UA supports scrolling of text fragments on navigation, invoke Scroll range into view, with range range, containingElement target, behavior set to "auto", block set to "center", and inline set to "nearest".”
         scrollRangeIntoView(range, target, { behavior: 'auto', block: 'center', inline: 'nearest' });
     }
 
@@ -286,8 +281,7 @@ export function firstCommonAncestor(nodeA: Node, nodeB: Node): Node | never {
     // 1. “Let commonAncestor be nodeA.”
     let commonAncestor = nodeA;
 
-    // 2. “While commonAncestor is not a shadow-including inclusive ancestor of nodeB, let commonAncestor be commonAncestor’s shadow-including parent.”
-    // XXX If the nodes are not part of the same tree, this becomes an infinite loop! Should be “While commonAncestor is not null and …”
+    // 2. “While commonAncestor is non-null and is not a shadow-including inclusive ancestor of nodeB, let commonAncestor be commonAncestor’s shadow-including parent.”
     while (!isShadowIncludingInclusiveAncestor(commonAncestor, /* of */ nodeB))
         commonAncestor = shadowIncludingParent(commonAncestor) as Node;
 
@@ -480,28 +474,9 @@ export function findRangeFromTextDirective(parsedValues: ParsedTextDirective, do
             if (potentialMatch === null)
                 return null;
 
-            // 10. “If potentialMatch’s start is not matchRange’s start, then and continue.” XXX then ~~and~~ continue
+            // 10. “If potentialMatch’s start is not matchRange’s start, then continue.”
             if (!samePoint(getStart(potentialMatch), getStart(matchRange)))
                 continue;
-
-            // 11. “If parsedValues’s textEnd item is non-null, then:”
-            // XXX This block of steps could be deduplicated by factoring it out of the if/else.
-            if (parsedValues.textEnd !== null) {
-                // 1. “Let textEndRange be a range whose start is potentialMatch’s end and whose end is searchRange’s end.”
-                const textEndRange = document.createRange();
-                textEndRange.setStart(...getEnd(potentialMatch));
-                textEndRange.setEnd(...getEnd(searchRange));
-
-                // 2. “Let textEndMatch be the result of running the find a string in range steps given parsedValue’s textEnd and textEndRange.”
-                const textEndMatch = findStringInRange(parsedValues.textEnd, textEndRange);
-
-                // 3. “If textEndMatch is null then return null.”
-                if (textEndMatch === null)
-                    return null;
-
-                // 4. “Set potentialMatch’s end to textEndMatch’s end.”
-                potentialMatch.setEnd(...getEnd(textEndMatch));
-            }
         }
         // 3. “Otherwise:”
         else {
@@ -515,59 +490,58 @@ export function findRangeFromTextDirective(parsedValues: ParsedTextDirective, do
             // 3. “Set searchRange’s start to the first boundary point after potentialMatch’s start”
             // XXX I suppose we can be certain a next boundary point always exist in this case; can we proof this?
             searchRange.setStart(...firstBoundaryPointAfter(getStart(potentialMatch)) as BoundaryPoint);
-
-            // 4. “If parsedValues’s textEnd item is non-null, then:”
-            // XXX This block of steps could be deduplicated by factoring it out of the if/else.
-            if (parsedValues.textEnd !== null) {
-                // 1. “Let textEndRange be a range whose start is potentialMatch’s end and whose end is searchRange’s end.”
-                const textEndRange = document.createRange();
-                textEndRange.setStart(...getEnd(potentialMatch));
-                textEndRange.setEnd(...getEnd(searchRange));
-
-                // 2. “Let textEndMatch be the result of running the find a string in range steps given parsedValue’s textEnd and textEndRange.”
-                const textEndMatch = findStringInRange(parsedValues.textEnd, textEndRange);
-
-                // 3. “If textEndMatch is null then return null.”
-                if (textEndMatch === null)
-                    return null;
-
-                // 4. “Set potentialMatch’s end to textEndMatch’s end.”
-                potentialMatch.setEnd(...getEnd(textEndMatch));
-            }
         }
 
-        // 4. “Assert: potentialMatch is non-null, not collapsed and represents a range exactly containing an instance of matching text.” XXX the last assertion sounds rather vague.
+        // 4. “If parsedValues’s textEnd item is non-null, then:”
+        if (parsedValues.textEnd !== null) {
+            // 1. “Let textEndRange be a range whose start is potentialMatch’s end and whose end is searchRange’s end.”
+            const textEndRange = document.createRange();
+            textEndRange.setStart(...getEnd(potentialMatch));
+            textEndRange.setEnd(...getEnd(searchRange));
+
+            // 2. “Let textEndMatch be the result of running the find a string in range steps given parsedValues’s textEnd and textEndRange.”
+            const textEndMatch = findStringInRange(parsedValues.textEnd, textEndRange);
+
+            // 3. “If textEndMatch is null then return null.”
+            if (textEndMatch === null)
+                return null;
+
+            // 4. “Set potentialMatch’s end to textEndMatch’s end.”
+            potentialMatch.setEnd(...getEnd(textEndMatch));
+        }
+
+        // 5. “Assert: potentialMatch is non-null, not collapsed and represents a range exactly containing an instance of matching text.” XXX the last assertion sounds rather vague.
         // assert(
         //     potentialMatch !== null
         //     && !potentialMatch.collapsed
         //     && new RegExp('^' + escapeRegExp(textStart) + '.*' + escapeRegExp(textEnd) + '$').test(potentialMatch.toString())  // …or something similar?
         // );
 
-        // 5. “If parsedValues’s suffix is null, return potentialMatch.”
+        // 6. “If parsedValues’s suffix is null, return potentialMatch.”
         if (parsedValues.suffix === null)
             return potentialMatch;
 
-        // 6. “Let suffixRange be a range with start equal to potentialMatch’s end and end equal to searchRange’s end.”
+        // 7. “Let suffixRange be a range with start equal to potentialMatch’s end and end equal to searchRange’s end.”
         const suffixRange = document.createRange();
         suffixRange.setStart(...getEnd(potentialMatch));
         suffixRange.setEnd(...getEnd(searchRange));
 
-        // 7. “Advance suffixRange’s start to the next non-whitespace position.”
+        // 8. “Advance suffixRange’s start to the next non-whitespace position.”
         advanceRangeStartToNextNonWhitespacePosition(suffixRange);
 
-        // 8. “Let suffixMatch be result of running the find a string in range steps given parsedValues’s suffix and suffixRange.”
+        // 9. “Let suffixMatch be result of running the find a string in range steps given parsedValues’s suffix and suffixRange.”
         const suffixMatch = findStringInRange(parsedValues.suffix, suffixRange);
 
-        // 9. “If suffixMatch is null then return null.”
+        // 10. “If suffixMatch is null then return null.”
         if (suffixMatch === null)
             return null;
 
-        // 10. “If suffixMatch’s start is suffixRange’s start, return potentialMatch.”
+        // 11. “If suffixMatch’s start is suffixRange’s start, return potentialMatch.”
         if (samePoint(getStart(suffixMatch), getStart(suffixRange)))
             return potentialMatch;
     }
 
-    // XXX Not in spec; by intention or accident?
+    // 3. “Return null”
     return null;
 }
 
@@ -584,10 +558,10 @@ export function advanceRangeStartToNextNonWhitespacePosition(range: Range) {
 
         // 3. “If node is part of a non-searchable subtree then:”
         if (partOfNonSearchableSubtree(node)) {
-            // 1. “Set range’s start node to the next node, in shadow-including tree order, that isn’t a shadow-including descendant of node.”
+            // 1. “Set range’s start node to the next node, in shadow-including tree order, that isn’t a shadow-including descendant of node, and set its start offset to 0.”
             range.setStart(
                 nextNodeInShadowIncludingTreeOrderThatIsNotAShadowIncludingDescendantOf(node) as Node, // XXX Can we be sure there is a next node? Asserting it here.
-                0, // XXX presumably we should set the offset to zero?
+                0,
             );
 
             // 2. “Continue.”
@@ -596,10 +570,10 @@ export function advanceRangeStartToNextNonWhitespacePosition(range: Range) {
 
         // 4. “If node is not a visible text node:”
         if (!isVisibleTextNode(node)) {
-            // 1. “Set range’s start node to the next node, in shadow-including tree order.”
+            // 1. “Set range’s start node to the next node, in shadow-including tree order, and set its start offset to 0.”
             range.setStart(
                 nextNodeInShadowIncludingTreeOrder(node) as Node, // XXX Can we be sure there is a next node? Asserting it here.
-                0, // XXX presumably we should set the offset to zero?
+                0,
             );
             // 2. “Continue.”
             continue;
@@ -629,19 +603,19 @@ export function advanceRangeStartToNextNonWhitespacePosition(range: Range) {
             range.setStart(range.startContainer, range.startOffset + 1);
         }
 
-        // 8. “If range’s start offset is equal to node’s length, set range’s start node to the next node in shadow-including tree order.”
+        // 8. “If range’s start offset is equal to node’s length, set range’s start node to the next node in shadow-including tree order, and set its start offset to 0.”
         if (range.startOffset === nodeLength(node)) {
             range.setStart(
                 nextNodeInShadowIncludingTreeOrder(node) as Node, // XXX Can we be sure there is a next node? Asserting it here.
-                0, // XXX presumably we should set the offset to zero?
+                0,
             );
         }
     }
 }
 
 // https://wicg.github.io/scroll-to-text-fragment/#find-a-string-in-range
-// To find a string in range for a string query in a given range range, run these steps:
-export function findStringInRange(query: string, searchRange: Range): Range | null { // XXX The spec calls it 'range' here, but 'searchRange' afterwards.
+// To find a string in range for a string query in a given range searchRange, run these steps:
+export function findStringInRange(query: string, searchRange: Range): Range | null {
     // 1. “While searchRange is not collapsed:”
     while (!searchRange.collapsed) {
         // 1. “Let curNode be searchRange’s start node.”
@@ -661,84 +635,73 @@ export function findStringInRange(query: string, searchRange: Range): Range | nu
 
         // 3. “If curNode is not a visible text node:”
         if (!isVisibleTextNode(curNode)) {
-            // 1. “Set searchRange’s start node to the next node, in shadow-including tree order.”
-            // searchRange.setStart(
-            //     nextNodeInShadowIncludingTreeOrder(curNode) as Node, // XXX Can we be sure there is a next node? Asserting it here.
-            //     0, // XXX presumably we should set the offset to zero?
-            // );
 
-            // XXX The above fails if nextNode is a doctype (see <https://dom.spec.whatwg.org/#concept-range-bp-set> as of 29 June 2020)
-            // Take the next node that is not a doctype.
+            // 1. “Set searchRange’s start node to the next node, in shadow-including tree order, that is not a doctype, and set its start offset to 0.”
             curNode = nextNodeInShadowIncludingTreeOrder(curNode);
             while (curNode && curNode.nodeType === Node.DOCUMENT_TYPE_NODE)
                 curNode = nextNodeInShadowIncludingTreeOrder(curNode);
             searchRange.setStart(
                 curNode as Node, // XXX Can we be sure there is a next node? Asserting it here.
-                0, // XXX presumably we should set the offset to zero?
+                0,
             );
 
             // 2. “Continue.”
             continue;
         }
 
-        // 4. “Otherwise:” XXX unnecessary due to the 'continue' (and confusing after two 'if's, should the latter be 'else if'?)
-        else {
-            // 1. “Let blockAncestor be the nearest block ancestor of curNode.”
-            const blockAncestor = nearestBlockAncestorOf(curNode);
+        // 4. “Let blockAncestor be the nearest block ancestor of curNode.”
+        const blockAncestor = nearestBlockAncestorOf(curNode);
 
-            // 2. “Let textNodeList be a list of Text nodes, initially empty.”
-            const textNodeList: Text[] = [];
+        // 5. “Let textNodeList be a list of Text nodes, initially empty.”
+        const textNodeList: Text[] = [];
 
-            // 3. “While curNode is a shadow-including descendant of blockAncestor and it does not follow searchRange’s end node:”
-            while (
-                curNode && isShadowIncludingDescendant(curNode, /* of */ blockAncestor)
-                // XXX “it does not follow searchRange’s end node” seems mistaken: *every* node follows Document, which is usually the end node…
-                // && !followsInTree(curNode, searchRange.endContainer)
-                // XXX …so we check instead whether curNode starts after searchRange.
-                && searchRange.comparePoint(curNode, 0) !== 1
-            ) {
-                // 1. “If curNode has block-level display then break.”
-                if (hasBlockLevelDisplay(curNode)) {
-                    break;
-                }
+        // 6. “While curNode is a shadow-including descendant of blockAncestor and the position of the boundary point (curNode, 0) is not after searchRange’s end:”
+        while (
+            curNode && isShadowIncludingDescendant(curNode, /* of */ blockAncestor)
+            && searchRange.comparePoint(curNode, 0) !== 1
+        ) {
 
-                // 2. “If curNode is search invisible:”
-                if (isSearchInvisible(curNode)) {
-                    // 1. “Set curNode to the next node in shadow-including tree order whose ancestor is not curNode.”
-                    // XXX Is this a *shadow-including* ancestor? Presumably yes, but making it explicit may be better.
-                    // XXX Two other places in the spec use the equivalent phrasing “that isn’t a shadow-including descendant of”. Best to then use the same phrasing here (or vice versa, but “whose ancestor” seems slightly less clear as it suggests there is only one ancestor).
-                    curNode = nextNodeInShadowIncludingTreeOrderThatIsNotAShadowIncludingDescendantOf(curNode);
-
-                    // 2. “Continue.”
-                    continue;
-                }
-
-                // 3. “If curNode is a visible text node then append it to textNodeList.”
-                if (isVisibleTextNode(curNode)) {
-                    textNodeList.push(curNode);
-                }
-
-                // 4. “Set curNode to the next node in shadow-including tree order.”
-                curNode = nextNodeInShadowIncludingTreeOrder(curNode);
-            }
-
-            // 4. “Run the find a range from a node list steps given query, searchRange, and textNodeList, as input. If the resulting range is not null, then return it.”
-            const resultingRange = findARangeFromANodeList(query, searchRange, textNodeList);
-            if (resultingRange !== null) {
-                return resultingRange;
-            }
-
-            // XXX curNode may be null (if we reach the end of tree).
-            if (curNode === null)
+            // 1. “If curNode has block-level display then break.”
+            if (hasBlockLevelDisplay(curNode)) {
                 break;
+            }
 
-            // 5. “Assert: curNode follows searchRange’s start node.”
-            // assert(followsInTree(curNode, searchRange.startContainer))
+            // 2. “If curNode is search invisible:”
+            if (isSearchInvisible(curNode)) {
 
-            // 6. “Set searchRange’s start to the boundary point (curNode, 0).”
-            searchRange.setStart(curNode, 0);
+                // 1. “Set curNode to the next node in shadow-including tree order that isn’t a shadow-including descendant of curNode.”
+                curNode = nextNodeInShadowIncludingTreeOrderThatIsNotAShadowIncludingDescendantOf(curNode);
+
+                // 2. “Continue.”
+                continue;
+            }
+
+            // 3. “If curNode is a visible text node then append it to textNodeList.”
+            if (isVisibleTextNode(curNode)) {
+                textNodeList.push(curNode);
+            }
+
+            // 4. “Set curNode to the next node in shadow-including tree order.”
+            curNode = nextNodeInShadowIncludingTreeOrder(curNode);
         }
+
+        // 7. “Run the find a range from a node list steps given query, searchRange, and textNodeList, as input. If the resulting range is not null, then return it.”
+        const resultingRange = findARangeFromANodeList(query, searchRange, textNodeList);
+        if (resultingRange !== null) {
+            return resultingRange;
+        }
+
+        // 8. “If curNode is null, then break.”
+        if (curNode === null)
+            break;
+
+        // 9. “Assert: curNode follows searchRange’s start node.”
+        // assert(searchRange.startContainer.compareDocumentPosition(curNode) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+        // 10. “Set searchRange’s start to the boundary point (curNode, 0).”
+        searchRange.setStart(curNode, 0);
     }
+
     // 2. “Return null.”
     return null;
 }
@@ -746,8 +709,7 @@ export function findStringInRange(query: string, searchRange: Range): Range | nu
 // https://wicg.github.io/scroll-to-text-fragment/#search-invisible
 // “A node is search invisible…”
 export function isSearchInvisible(node: Node): boolean {
-    // “…if it is in the HTML namespace and meets any of the following conditions:”
-    // XXX Namespace for nodes is inapplicable/deprecated? Presuming this was meant: “…if it is an element in the HTML namespace…”
+    // “…if it is an element in the HTML namespace and meets any of the following conditions:”
     if (isElement(node) && node.namespaceURI === htmlNamespace) {
 
         // 1. “The computed value of its display property is none.”
@@ -770,40 +732,32 @@ export function isSearchInvisible(node: Node): boolean {
 }
 
 // https://wicg.github.io/scroll-to-text-fragment/#non-searchable-subtree
-// “A node is part of a non-searchable subtree if it is or has an ancestor that is search invisible.”
+// “A node is part of a non-searchable subtree if it is or has a shadow-including ancestor that is search invisible.”
 export function partOfNonSearchableSubtree(node: Node): boolean {
     let curNode: Node | null = node;
     while (curNode) {
         if (isSearchInvisible(curNode))
             return true;
-        curNode = curNode.parentNode; // XXX I would expect this to be “shadow-including ancestor”.
-        // curNode = shadowIncludingParent(curNode);
+        curNode = shadowIncludingParent(curNode);
     }
     return false;
 }
 
 // https://wicg.github.io/scroll-to-text-fragment/#visible-text-node
-// “A node is a visible text node if it is a Text node, the computed value of its visibility property is visible, and it is being rendered.”
+// “A node is a visible text node if it is a Text node, the computed value of its parent element's visibility property is visible, and it is being rendered.”
 export type VisibleTextNode = Text; // could be `unique Text`, when (if) TypeScript will support that.
 export function isVisibleTextNode(node: Node): node is VisibleTextNode {
-    if (node.nodeType !== Node.TEXT_NODE)
-        return false;
-
-    // XXX How are “the computed value of its visibility property” and “being rendered” defined for non-element nodes? Using the text node’s parent element instead!
-    if (
-        node.parentElement
+    return (
+        node.nodeType === Node.TEXT_NODE
+        && node.parentElement !== null
         && getComputedStyle(node.parentElement).visibility === 'visible'
         && isBeingRendered(node.parentElement)
-    )
-        return true;
-
-    return false;
+    );
 }
 
 // https://wicg.github.io/scroll-to-text-fragment/#has-block-level-display
-// “A node has block-level display if the computed value of its display property is any of block, table, flow-root, grid, flex, list-item.”
+// “A node has block-level display if it is an element and the computed value of its display property is any of block, table, flow-root, grid, flex, list-item.”
 export function hasBlockLevelDisplay(node: Node): boolean {
-    // XXX How is “the computed value of its display property” defined for non-element nodes? Assuming here it only applies to elements!
     return (
         isElement(node)
         && ['block', 'table', 'flow-root', 'grid', 'flex', 'list-item'].includes(getComputedStyle(node).display)
@@ -813,79 +767,70 @@ export function hasBlockLevelDisplay(node: Node): boolean {
 // https://wicg.github.io/scroll-to-text-fragment/#nearest-block-ancestor
 // “To find the nearest block ancestor of a node follow the steps:”
 export function nearestBlockAncestorOf(node: Node): Node {
-    // 1. “While node is non-null”
-    // XXX We replace node with a new variable curNode for walking up the tree, as we will still need a non-null node in step 2 (and also it needs the type Node | null).
+    // 1. “Let curNode be node.”
     let curNode: Node | null = node;
+
+    // 2. “While curNode is non-null”
     while (curNode !== null) {
 
-        // 1. “If node is not a Text node and it has block-level display then return node.”
+        // 1. “If curNode is not a Text node and it has block-level display then return curNode.”
         if (curNode.nodeType !== Node.TEXT_NODE && hasBlockLevelDisplay(curNode))
             return curNode;
 
-        // 2. “Otherwise, set node to node’s parent.”
+        // 2. “Otherwise, set curNode to curNode’s parent.”
         else
             curNode = curNode.parentNode;
     }
 
-    // 2. “Return node’s node document's document element.”
-    // XXX In the spec, node would be null now! Hence the need for introducing curNode.
+    // 3. “Return node’s node document's document element.”
     return (node.ownerDocument ?? node as Document).documentElement;
 }
 
 // https://wicg.github.io/scroll-to-text-fragment/#find-a-range-from-a-node-list
-// “To find a range from a node list given a search string queryString, a range searchRange, and a list of nodes nodes, follow the steps”
+// “To find a range from a node list given a search string queryString, a range searchRange, and a list of Text nodes nodes, follow the steps”
 export function findARangeFromANodeList(queryString: string, searchRange: Range, nodes: Text[]): Range | null {
-    // 1. “Assert: each item in nodes is a Text node.”
-    // XXX Could this not just be asserted through the parameter type, like is done in “get boundary point at index”? Applying this already.
-    // assert(nodes.every(node => node.nodeType === Node.TEXT_NODE));
-
-    // 2. “Let searchBuffer be the concatenation of the data of each item in in nodes.”
-    // XXX typo: “in in nodes”
+    // 1. “Let searchBuffer be the concatenation of the data of each item in nodes.”
     const searchBuffer = nodes.map(node => node.data).join('');
 
-    // 3. “Let searchStart be 0.”
+    // 2. “Let searchStart be 0.”
     let searchStart = 0;
 
-    // 4. “If the first item in nodes is searchRange’s start node then set searchStart to searchRange’s start offset.”
+    // 3. “If the first item in nodes is searchRange’s start node then set searchStart to searchRange’s start offset.”
     if (nodes[0] === searchRange.startContainer)
         searchStart = searchRange.startOffset;
 
-    // 5. “Let start and end be boundary points, initially null.”
+    // 4. “Let start and end be boundary points, initially null.”
     let start: BoundaryPoint | null = null;
     let end: BoundaryPoint | null = null;
 
-    // 6. “Let matchIndex be null.”
+    // 5. “Let matchIndex be null.”
     let matchIndex = null;
 
-    // 7. “While matchIndex is null”
+    // 6. “While matchIndex is null”
     while (matchIndex === null) {
-        // 1. “Let matchIndex be an integer set to the index of the first instance of queryString in searchBuffer, starting at searchStart. The string search must be performed using a base character comparison, or the primary level, as defined in [UTS10].”
-        // XXX “Let matchIndex be an integer” sounds like a redeclaration; presumably a mistake?
+        // 1. “Set matchIndex to the index of the first instance of queryString in searchBuffer, starting at searchStart. The string search must be performed using a base character comparison, or the primary level, as defined in [UTS10].”
         // TODO implement base character comparison (i.e. ignoring accents, etc.)
         // XXX It would be helpful to have more specific guidance than merely a link to UTS10 <https://www.unicode.org/reports/tr10/tr10-43.html>
         matchIndex = searchBuffer.toLowerCase().indexOf(queryString.toLowerCase(), searchStart); // TEMP case-insensitive string match will have to suffice for now.
 
-        // XXX If queryString does not appear in searchString, I suppose we should return.
+        // 2. “If matchIndex is null, return null.”
         if (matchIndex === -1)
             return null;
 
-        // 2. “Let endIx be matchIndex + queryString’s length.”
+        // 3. “Let endIx be matchIndex + queryString’s length.”
         const endIx = matchIndex + queryString.length;
 
-        // 3. “Set start be the boundary point result of get boundary point at index matchIndex run over nodes with isEnd false.”
-        // XXX typo: “Set start be”
+        // 4. “Set start to the boundary point result of get boundary point at index matchIndex run over nodes with isEnd false.”
         start = getBoundaryPointAtIndex(matchIndex, nodes, false) as BoundaryPoint;
 
-        // 4. “Set end be the boundary point result of get boundary point at index endIx run over nodes with isEnd true.”
-        // XXX typo: “Set end be”
+        // 5. “Set end to the boundary point result of get boundary point at index endIx run over nodes with isEnd true.”
         end = getBoundaryPointAtIndex(endIx, nodes, true) as BoundaryPoint;
 
         // XXX Assert start and end are non-null? (should be correct, as matchIndex and endIx are both less than the search text’s length)
 
-        // 5. “If the substring of searchBuffer starting at matchIndex and of length queryString’s length is not word bounded, given the language from each of start and end’s nodes as the startLocale and endLocale:”
+        // 6. “If the substring of searchBuffer starting at matchIndex and of length queryString’s length is not word bounded, given the language from each of start and end’s nodes as the startLocale and endLocale:”
         if (!isWordBounded(searchBuffer, matchIndex, queryString.length, languageOf(start[0]), languageOf(end[0]))) {
-            // 1. “Let searchStart be matchIndex + 1.”
-            // XXX “Let … be” should be “Set … to”?
+            // 1. “Set searchStart to matchIndex + 1.”
             searchStart = matchIndex + 1;
 
             // 2. “Set matchIndex to null.”
@@ -893,24 +838,23 @@ export function findARangeFromANodeList(queryString: string, searchRange: Range,
         }
     }
 
-    // 8. “Let endInset be 0.”
+    // 7. “Let endInset be 0.”
     let endInset = 0;
 
-    // 9. “If the last item in nodes is searchRange’s end node then set endInset to (searchRange’s end node's length − searchRange’s end offset)”
+    // 8. “If the last item in nodes is searchRange’s end node then set endInset to (searchRange’s end node's length − searchRange’s end offset)”
     if (nodes[nodes.length - 1] === searchRange.endContainer)
         endInset = (searchRange.endContainer as Text).length - searchRange.endOffset;
 
-    // 10. “If matchIndex + queryString’s length is greater than or equal to searchBuffer’s length − endInset return null.”
-    // XXX This comparison should be strictly greater than: a boundary point can be right after the last character.
+    // 9. “If matchIndex + queryString’s length is greater than searchBuffer’s length − endInset return null.”
     if (matchIndex + queryString.length > searchBuffer.length - endInset)
         return null;
 
-    // 11. “Assert: start and end are non-null, valid boundary points in searchRange.”
+    // 10. “Assert: start and end are non-null, valid boundary points in searchRange.”
     // assert(start !== null && end !== null && searchRange.comparePoint(...start) === 0 && searchRange.comparePoint(...end) === 0);
     start = start as BoundaryPoint;
     end = end as BoundaryPoint;
 
-    // 12. “Return a range with start start and end end.”
+    // 11. “Return a range with start start and end end.”
     const result = document.createRange();
     result.setStart(...start);
     result.setEnd(...end);
@@ -961,9 +905,8 @@ export function isWordBounded(text: string, startPosition: integer, count: numbe
     // XXX It seems that “startPositionth” involves zero-based indexing; is that considered self-evident?
     const leftBound = nearestWordBoundary(text, startPosition, 'before', startLocale);
 
-    // “A string will always contain at least 2 word boundaries before the first code point and after the last code point of the string.
+    // “A string will always contain at least 2 word boundaries: before the first code point and after the last code point of the string.
     // XXX Is this really true, even for a string with only white space? Or an empty string?
-    // XXX typo: missing a colon before “before”
 
     // 2. “If the first code point of text following left bound is not at position startPosition return false.”
     if (leftBound !== startPosition) // We should be able to assume leftBound is not inside a multi-unit code point.
