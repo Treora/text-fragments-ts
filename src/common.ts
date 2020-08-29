@@ -1,6 +1,3 @@
-export type nonEmptyString = string;
-export type integer = number;
-
 export type locale = string;
 
 export function nextNode(node: Node): Node | null {

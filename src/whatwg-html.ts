@@ -6,10 +6,8 @@
 
 
 import {
-    integer,
     locale,
     isElement,
-    nonEmptyString,
 } from './common.js';
 
 import {
@@ -96,30 +94,6 @@ export function getPragmaSetDefaultLanguage(): string | undefined {
 
     return pragmaSetDefaultLanguage as string | undefined;
 }
-
-
-// § 7.5 Origin
-// https://html.spec.whatwg.org/multipage/origin.html#concept-origin
-// “An origin is one of the following:”
-export type origin = opaqueOrigin | tupleOrigin
-
-// https://html.spec.whatwg.org/multipage/origin.html#concept-origin-opaque
-// “An opaque origin”: “An internal value, with no serialization it can be recreated from (it is serialized as "null" per serialization of an origin), for which the only meaningful operation is testing for equality.”
-export type opaqueOrigin = symbol; // I guess?
-
-// https://html.spec.whatwg.org/multipage/origin.html#concept-origin-tuple
-// “A tuple origin”: “A tuple consists of:
-//   • A scheme (a scheme).
-//   • A host (a host).
-//   • A port (a port).
-//   • A domain (null or a domain). Null unless stated otherwise.”
-export type tupleOrigin = [
-    // (using primitive types here; specifying these further is beyond scope)
-    string,
-    string | integer | integer[], // integers for IP addresses
-    integer | null,
-    nonEmptyString | null,
-];
 
 
 // § 12.1.2 Elements

@@ -8,8 +8,6 @@
 
 
 import {
-    nonEmptyString,
-    integer,
     locale,
     isElement,
     nextNode,
@@ -27,7 +25,6 @@ import {
 
 import {
     languageOf,
-    origin,
     serializesAsVoid,
     isBeingRendered,
 } from './whatwg-html.js';
@@ -35,6 +32,9 @@ import {
 import {
     htmlNamespace,
 } from './whatwg-infra.js';
+
+type nonEmptyString = string;
+type integer = number;
 
 
 // § 3.3.1. Parsing the fragment directive
@@ -199,47 +199,6 @@ export function isTextFragmentDirective(input: string): input is TextDirective {
     // TODO (use PEG.js?)
     return input.startsWith('text='); // TEMP
 }
-
-
-// § 3.4. Security and Privacy
-
-
-// § 3.4.4 Restricting the Text Fragment
-
-// https://wicg.github.io/scroll-to-text-fragment/#should-allow-a-text-fragment
-// “To determine whether a navigation should allow a text fragment, given as input a boolean is user triggered, an origin incumbentNavigationOrigin, and Document document; follow these steps:”
-export function shouldAllowTextFragment(isUserTriggered: boolean, incumbentNavigationOrigin: origin | null, document: Document): boolean {
-    // 1. “If incumbentNavigationOrigin is null, return true.”
-    // XXX This implies null is a potential value of the parameter (is this implicitly allowed in web specs?). (note that an opaque origin is serialised to null, but that is presumably not the situation meant here)
-    if (incumbentNavigationOrigin === null)
-        return true;
-
-    // 2. “If is user triggered is false, return false.”
-    if (isUserTriggered === false)
-        return false;
-
-    // 3. “If the document of the latest entry in document’s browsing context's session history is equal to document, return false.”
-    // 4. “If incumbentNavigationOrigin is equal to the origin of document return true.”
-    // 5. “If document’s browsing context is a top-level browsing context and its group’s browsing context set has length 1 return true.”
-    // NOT IMPLEMENTED. Implementing these steps would require reproducing a bunch of browser internals. Probably not worthwhile.
-
-    // 6. “Otherwise, return false.”
-    return false;
-}
-
-// https://wicg.github.io/scroll-to-text-fragment/#allowtextfragmentdirective
-// “To set the allowTextFragmentDirective flag, follow these steps:”
-// XXX Is this line supposed to be there? Looks like it may have left by accident while changing the approach.
-
-// “Amend the page load processing model for HTML files to insert these steps after step 1:
-//     2. “Let is user activated be true if the current navigation was initiated from a window that had a transient activation at the time the navigation was initiated.”
-//     3. “Set document’s allowTextFragmentDirective flag to the result of running should allow a text fragment with is user activated, incumbentNavigationOrigin, and the document.”
-// Amend the try to scroll to the fragment steps by replacing the steps of the task queued in step 2:
-//     1. “If document has no parser, or its parser has stopped parsing, or the user agent has reason to believe the user is no longer interested in scrolling to the fragment, then clear document’s allowTextFragmentDirective flag and abort these steps.”
-//     2. “Scroll to the fragment given in document’s URL. If this does not find an indicated part of the document, then try to scroll to the fragment for document.”
-//     3. “Clear document’s allowTextFragmentDirective flag””
-
-// NOT IMPLEMENTED. Implementing these amendments would require reproducing a bunch of browser internals. Not deemed worthwhile here.
 
 
 // § 3.5. Navigating to a Text Fragment
