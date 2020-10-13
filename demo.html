@@ -88,7 +88,7 @@
                         <a href="#:~:text=sit-,amet,-auctor">Both prefix and suffix</a>
                     </li>
                     <li>
-                        <a href="#:~:text=word?-,Not%20sure.">Text making up a whole, reoccurring block element</a>
+                        <a href="#:~:text=GATTACAGACTGCGATACGT-,TACT,-AGTTAGGACTACGGGATCATATTAC">Point at letters within a word.</a> (possible since <a href="https://github.com/WICG/scroll-to-text-fragment/pull/148">spec update of October 2020</a>; requires quoting the whole word in prefix&suffix)
                     </li>
                     <li>
                         <a href="#:~:text=Fusce%20quis,est.">Select text between two given phrases</a>
@@ -97,13 +97,13 @@
                         <a href="#:~:text=Aliquam%20urna,scelerisque.">Text between two phrases in different block elements</a>
                     </li>
                     <li>
+                        <a href="#:~:text=GATTACA,CATATTAC">Select text between start and end of a long, uninterrupted string</a> <a href="https://github.com/WICG/scroll-to-text-fragment/issues/137">(not possible)</a>
+                    </li>
+                    <li>
+                        <a href="#:~:text=And more.-,And more.">Text making up a whole, reoccurring block element</a>
+                    </li>
+                    <li>
                         <a href="#:~:text=Phasellus%20tempus%20dui&text=venenatis%20leo&text=ipsum,-eget">Multiple pieces of text (only works in Firefox)</a>
-                    </li>
-                    <li>
-                        <a href="#:~:text=GATTACA,CATATTAC">Select text between start and end of a long, uninterrupted string <em>(fails)</em></a>
-                    </li>
-                    <li>
-                        <a href="#:~:text=poi-,i,-nt">Point at letters (e.g. a typo) within a word <em>(fails)</em></a>
                     </li>
                 </ul>
                 <p>
@@ -134,16 +134,16 @@
                 Vestibulum eu tristique elit. Sed ac ipsum sed sapien ultricies dapibus. Cras efficitur aliquet luctus. Aliquam sit amet auctor tellus, nec rhoncus nisl. Integer at lobortis sapien. Nunc mattis tristique libero, sed ultrices nunc imperdiet eu. Pellentesque accumsan, eros non auctor eleifend, felis massa bibendum lacus, non venenatis orci sapien eu sapien. Integer eu eros fringilla lectus vestibulum aliquam. Cras consectetur nunc nisi, vel molestie justo congue at. Duis eros neque, semper ut commodo in, molestie ut nunc. Vivamus vitae bibendum magna, suscipit sollicitudin elit. Praesent id rhoncus enim, sit amet suscipit velit. Aenean euismod purus velit, et consectetur nulla gravida vitae.
             </p>
             <p>
-                The Chrome-osome is GATTACAGACTGCGATACGTTACTAGTTAGGACTACGGGATCATATTAC. Can we select it without quoting the whole thing?
+                The Chrome-osome is GATTACAGACTGCGATACGTTACTAGTTAGGACTACGGGATCATATTAC. Can we select it without quoting the whole thing? Nope.
             </p>
             <p>
-                Not sure.
+                More.
             </p>
             <p>
-                And how to poiint at letters (e.g. a typo) within a word?
+                And more.
             </p>
             <p>
-                Not sure.
+                And more.
             </p>
             <p>
                 Finally, <a href="#:~:text=Text%20Fragments%20playground">a link to scroll back up.</a>

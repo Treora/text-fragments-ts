@@ -4,7 +4,7 @@
 
 // An implementation of (most of) the Text Fragments draft spec.
 // See https://wicg.github.io/scroll-to-text-fragment/
-// Based on the version of 28 August 2020. <https://raw.githubusercontent.com/WICG/scroll-to-text-fragment/2475249f76ba20a6e6272e91853001155fdc3d22/index.html>
+// Based on the version of 22 October 2020. <https://raw.githubusercontent.com/WICG/scroll-to-text-fragment/1c05e62b77f8f141d567dd287a2a42ea74870552/index.html>
 
 
 import {
@@ -441,8 +441,8 @@ export function findRangeFromTextDirective(parsedValues: ParsedTextDirective, do
         let potentialMatch = null;
         // 2. “If parsedValues’s prefix is not null:”
         if (parsedValues.prefix !== null) {
-            // 1. “Let prefixMatch be the the result of running the find a string in range steps given parsedValues’s prefix and searchRange”.
-            const prefixMatch = findStringInRange(parsedValues.prefix, searchRange);
+            // 1. “Let prefixMatch be the the result of running the find a string in range steps with query parsedValues’s prefix, searchRange searchRange, wordStartBounded true and wordEndBounded false.”
+            const prefixMatch = findStringInRange(parsedValues.prefix, searchRange, true, false);
 
             // 2. “If prefixMatch is null, return null.”
             if (prefixMatch === null)
@@ -467,27 +467,33 @@ export function findRangeFromTextDirective(parsedValues: ParsedTextDirective, do
             // 7. “Assert: matchRange’s start node is a Text node.”
             // assert(matchRange.startContainer.nodeType === Node.TEXT_NODE);
 
-            // 8. “Set potentialMatch to the result of running the find a string in range steps given parsedValues’s textStart and matchRange.”
-            potentialMatch = findStringInRange(parsedValues.textStart, matchRange);
+            // 8. “Let mustEndAtWordBoundary be true if parsedValues’s textEnd is non-null or parsedValues’s suffix is null, false otherwise.”
+            const mustEndAtWordBoundary = (parsedValues.textEnd !== null || parsedValues.suffix === null);
 
-            // 9. “If potentialMatch is null, return null.”
+            // 9. “Set potentialMatch to the result of running the find a string in range steps with query parsedValues’s textStart, searchRange matchRange, wordStartBounded false, and wordEndBounded mustEndAtWordBoundary.”
+            potentialMatch = findStringInRange(parsedValues.textStart, matchRange, false, mustEndAtWordBoundary);
+
+            // 10. “If potentialMatch is null, return null.”
             if (potentialMatch === null)
                 return null;
 
-            // 10. “If potentialMatch’s start is not matchRange’s start, then continue.”
+            // 11. “If potentialMatch’s start is not matchRange’s start, then continue.”
             if (!samePoint(getStart(potentialMatch), getStart(matchRange)))
                 continue;
         }
         // 3. “Otherwise:”
         else {
-            // 1. “Set potentialMatch to the result of running the find a string in range steps given parsedValues’s textStart and searchRange.”
-            potentialMatch = findStringInRange(parsedValues.textStart, searchRange);
+            // 1. “Let mustEndAtWordBoundary be true if parsedValues’s textEnd is non-null or parsedValues’s suffix is null, false otherwise.”
+            const mustEndAtWordBoundary = (parsedValues.textEnd !== null || parsedValues.suffix === null);
 
-            // 2. “If potentialMatch is null, return null.”
+            // 2. “Set potentialMatch to the result of running the find a string in range steps with query parsedValues’s textStart, searchRange searchRange, wordStartBounded true, and wordEndBounded mustEndAtWordBoundary.”
+            potentialMatch = findStringInRange(parsedValues.textStart, searchRange, true, mustEndAtWordBoundary);
+
+            // 3. “If potentialMatch is null, return null.”
             if (potentialMatch === null)
                 return null;
 
-            // 3. “Set searchRange’s start to the first boundary point after potentialMatch’s start”
+            // 4. “Set searchRange’s start to the first boundary point after potentialMatch’s start”
             // XXX I suppose we can be certain a next boundary point always exist in this case; can we proof this?
             searchRange.setStart(...firstBoundaryPointAfter(getStart(potentialMatch)) as BoundaryPoint);
         }
@@ -499,14 +505,17 @@ export function findRangeFromTextDirective(parsedValues: ParsedTextDirective, do
             textEndRange.setStart(...getEnd(potentialMatch));
             textEndRange.setEnd(...getEnd(searchRange));
 
-            // 2. “Let textEndMatch be the result of running the find a string in range steps given parsedValues’s textEnd and textEndRange.”
-            const textEndMatch = findStringInRange(parsedValues.textEnd, textEndRange);
+            // 2. “Let mustEndAtWordBoundary be true if parsedValues’s suffix is null, false otherwise.”
+            const mustEndAtWordBoundary = parsedValues.suffix === null;
 
-            // 3. “If textEndMatch is null then return null.”
+            // 3. “Let textEndMatch be the result of running the find a string in range steps with query parsedValues’s textEnd, searchRange textEndRange, wordStartBounded true, and wordEndBounded mustEndAtWordBoundary.”
+            const textEndMatch = findStringInRange(parsedValues.textEnd, textEndRange, true, mustEndAtWordBoundary);
+
+            // 4. “If textEndMatch is null then return null.”
             if (textEndMatch === null)
                 return null;
 
-            // 4. “Set potentialMatch’s end to textEndMatch’s end.”
+            // 5. “Set potentialMatch’s end to textEndMatch’s end.”
             potentialMatch.setEnd(...getEnd(textEndMatch));
         }
 
@@ -529,8 +538,8 @@ export function findRangeFromTextDirective(parsedValues: ParsedTextDirective, do
         // 8. “Advance suffixRange’s start to the next non-whitespace position.”
         advanceRangeStartToNextNonWhitespacePosition(suffixRange);
 
-        // 9. “Let suffixMatch be result of running the find a string in range steps given parsedValues’s suffix and suffixRange.”
-        const suffixMatch = findStringInRange(parsedValues.suffix, suffixRange);
+        // 9. “Let suffixMatch be result of running the find a string in range steps with query parsedValues’s suffix, searchRange suffixRange, wordStartBounded false, and wordEndBounded true.”
+        const suffixMatch = findStringInRange(parsedValues.suffix, suffixRange, false, true);
 
         // 10. “If suffixMatch is null then return null.”
         if (suffixMatch === null)
@@ -614,8 +623,8 @@ export function advanceRangeStartToNextNonWhitespacePosition(range: Range) {
 }
 
 // https://wicg.github.io/scroll-to-text-fragment/#find-a-string-in-range
-// To find a string in range for a string query in a given range searchRange, run these steps:
-export function findStringInRange(query: string, searchRange: Range): Range | null {
+// To find a string in range given a string query, a range searchRange, and booleans wordStartBounded and wordEndBounded, run these steps:
+export function findStringInRange(query: string, searchRange: Range, wordStartBounded: boolean, wordEndBounded: boolean): Range | null {
     // 1. “While searchRange is not collapsed:”
     while (!searchRange.collapsed) {
         // 1. “Let curNode be searchRange’s start node.”
@@ -685,8 +694,8 @@ export function findStringInRange(query: string, searchRange: Range): Range | nu
             curNode = nextNodeInShadowIncludingTreeOrder(curNode);
         }
 
-        // 7. “Run the find a range from a node list steps given query, searchRange, and textNodeList, as input. If the resulting range is not null, then return it.”
-        const resultingRange = findARangeFromANodeList(query, searchRange, textNodeList);
+        // 7. “Run the find a range from a node list steps given query, searchRange, textNodeList, wordStartBounded and wordEndBounded as input. If the resulting range is not null, then return it.”
+        const resultingRange = findARangeFromANodeList(query, searchRange, textNodeList, wordStartBounded, wordEndBounded);
         if (resultingRange !== null) {
             return resultingRange;
         }
@@ -787,8 +796,8 @@ export function nearestBlockAncestorOf(node: Node): Node {
 }
 
 // https://wicg.github.io/scroll-to-text-fragment/#find-a-range-from-a-node-list
-// “To find a range from a node list given a search string queryString, a range searchRange, and a list of Text nodes nodes, follow the steps”
-export function findARangeFromANodeList(queryString: string, searchRange: Range, nodes: Text[]): Range | null {
+// “To find a range from a node list given a search string queryString, a range searchRange, a list of Text nodes nodes, and booleans wordStartBounded and wordEndBounded, follow these steps:”
+export function findARangeFromANodeList(queryString: string, searchRange: Range, nodes: Text[], wordStartBounded: boolean, wordEndBounded: boolean): Range | null {
     // 1. “Let searchBuffer be the concatenation of the data of each item in nodes.”
     const searchBuffer = nodes.map(node => node.data).join('');
 
@@ -828,8 +837,12 @@ export function findARangeFromANodeList(queryString: string, searchRange: Range,
 
         // XXX Assert start and end are non-null? (should be correct, as matchIndex and endIx are both less than the search text’s length)
 
-        // 6. “If the substring of searchBuffer starting at matchIndex and of length queryString’s length is not word bounded, given the language from each of start and end’s nodes as the startLocale and endLocale:”
-        if (!isWordBounded(searchBuffer, matchIndex, queryString.length, languageOf(start[0]), languageOf(end[0]))) {
+        // 6. “If wordStartBounded is true and matchIndex is not at a word boundary in searchBuffer, given the language from start’s node as the locale; or wordEndBounded is true and matchIndex + queryString’s length is not at a word boundary in searchBuffer, given the language from end’s node as the locale:”
+        if (
+            wordStartBounded && !isAtWordBoundary(matchIndex, searchBuffer, languageOf(start[0]))
+            || wordEndBounded && !isAtWordBoundary(matchIndex + queryString.length, searchBuffer, languageOf(end[0]))
+        ) {
+
             // 1. “Set searchStart to matchIndex + 1.”
             searchStart = matchIndex + 1;
 
@@ -894,37 +907,27 @@ export function getBoundaryPointAtIndex(index: integer, nodes: Text[], isEnd: bo
 
 // § 3.5.3 Word Boundaries
 
-// https://wicg.github.io/scroll-to-text-fragment/#word-bounded
-// “To determine if a substring of a larger string is word bounded, given a string text, an integer startPosition, number count, and locales startLocale and endLocale, follow these steps:”
+// https://wicg.github.io/scroll-to-text-fragment/#word-boundary:
+// “A word boundary is defined in [UAX29] in Unicode Text Segmentation §Word_Boundaries. Unicode Text Segmentation §Default_Word_Boundaries defines a default set of what constitutes a word boundary, but as the specification mentions, a more sophisticated algorithm should be used based on the locale.”
 
-// “startLocale and endLocale must be a valid [BCP47] language tag, or the empty string. An empty string indicates that the primary language is unknown.” <https://tools.ietf.org/html/bcp47>
-// XXX Is this, or should this be a step? (should locale strings be validated?)
+// https://wicg.github.io/scroll-to-text-fragment/#locale
+// “A locale is a string containing a valid [BCP47] language tag, or the empty string. An empty string indicates that the primary language is unknown.”
+// (the locale type is defined in ./common.ts and imported above)
 
-export function isWordBounded(text: string, startPosition: integer, count: number, startLocale: locale, endLocale: locale): boolean {
-    // 1. “Using locale startLocale, let left bound be the last word boundary in text that precedes startPositionth code point of text.”
-    // XXX It seems that “startPositionth” involves zero-based indexing; is that considered self-evident?
-    const leftBound = nearestWordBoundary(text, startPosition, 'before', startLocale);
+// https://wicg.github.io/scroll-to-text-fragment/#is-at-a-word-boundary
+// “A number position is at a word boundary in a string text, given a locale locale, if, using locale, …”
+export function isAtWordBoundary(position: number, text: string, locale: locale) {
+    // “…either a word boundary immediately precedes the positionth code unit, …”
+    // TODO Implement the “default word boundary specification” of the referenced unicode spec.
+    // TEMP Just use a regular expression to test against a pair of alphanumeric characters.
+    if (text.charAt(position) && text.substring(position - 1, position + 1).match(/^[\w\d]{2,2}$/) === null)
+        return true;
 
-    // “A string will always contain at least 2 word boundaries: before the first code point and after the last code point of the string.
-    // XXX Is this really true, even for a string with only white space? Or an empty string?
+    // “…or text’s length is more than 0 and position equals either 0 or text’s length.”
+    if (text.length > 0 && (position === 0 || position === text.length))
+        return true;
 
-    // 2. “If the first code point of text following left bound is not at position startPosition return false.”
-    if (leftBound !== startPosition) // We should be able to assume leftBound is not inside a multi-unit code point.
-        return false;
-
-    // 3. “Let endPosition be (startPosition + count − 1).”
-    const endPosition = startPosition + count - 1;
-
-    // 4. “Using locale endLocale, let right bound be the first word boundary in text after the endPositionth code point.”
-    // XXX It seems that “endPositionth” involves zero-based indexing; is that considered self-evident?
-    const rightBound = nearestWordBoundary(text, endPosition, 'after', endLocale);
-
-    // 5. “If the first code point of text preceding right bound is not at position endPosition return false.”
-    if (rightBound - 1 !== endPosition) // TEMP (TODO figure this out)
-        return false;
-
-    // 6. “Return true.”
-    return true;
+    return false;
 }
 
 // https://wicg.github.io/scroll-to-text-fragment/#feature-detectability
@@ -1008,23 +1011,5 @@ function firstBoundaryPointAfter([node, offset]: BoundaryPoint): BoundaryPoint |
             return [next, 0];
         else
             return null;
-    }
-}
-
-// XXX Is this supposed to be self-evident, or should these steps perhaps be included in the spec?
-function nearestWordBoundary(text: string, position: integer, direction: 'before' | 'after', locale: locale): integer {
-    // From <https://wicg.github.io/scroll-to-text-fragment/#word-bounded>:
-    // “A word boundary is defined in [UAX29] in Unicode Text Segmentation §Word_Boundaries. Unicode Text Segmentation §Default_Word_Boundaries defines a default set of what constitutes a word boundary, but as the specification mentions, a more sophisticated algorithm should be used based on the locale.”
-
-    // TODO Look into the referenced unicode spec.
-    // TEMP Just use regular expression’s word boundaries, whitespace, and the string’s start and end.
-    const allBoundaries = [...text.matchAll(/^|\b|\s|$/g)].map(match => match.index as integer);
-    if (direction === 'before') {
-        // Find the last match before position. Sure to exist because we also match the start of the string.
-        allBoundaries.reverse();
-        return allBoundaries.find(boundaryPosition => boundaryPosition <= position) as number;
-    } else {
-        // Find the first match after position. Sure to exist because we also match the end of the string.
-        return allBoundaries.find(boundaryPosition => boundaryPosition > position) as number;
     }
 }
