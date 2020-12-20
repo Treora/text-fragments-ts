@@ -1,4 +1,4 @@
-export type locale = string;
+export type Locale = string;
 
 export function nextNode(node: Node): Node | null {
     const walker = (node.ownerDocument ?? node as Document).createTreeWalker(node.getRootNode());

@@ -6,20 +6,20 @@
 
 
 import {
-    locale,
+    Locale,
     isElement,
 } from './common.js';
 
 import {
+    asciiWhitespace,
     htmlNamespace,
-    AsciiWhitespace,
     xmlNamespace,
 } from './whatwg-infra.js';
 
 
 // § 3.2.6.2 The lang and xml:lang attributes
 // https://html.spec.whatwg.org/multipage/dom.html#language
-export function languageOf(node: Node): locale {
+export function languageOf(node: Node): Locale {
     // “To determine the language of a node, user agents must look at the nearest ancestor element (including the element itself if the node is an element) that has a lang attribute in the XML namespace set or is an HTML element and has a lang in no namespace attribute set. That attribute specifies the language of the node (regardless of its value).”
     let curNode: Node | null = node;
     while (curNode !== null) {
@@ -73,13 +73,13 @@ export function getPragmaSetDefaultLanguage(): string | undefined {
         let position = 0;
 
         // 5. “Skip ASCII whitespace within input given position.”
-        while (position < input.length && AsciiWhitespace.includes(input[position]))
+        while (position < input.length && asciiWhitespace.includes(input[position]))
             position++;
 
         // 6. “Collect a sequence of code points that are not ASCII whitespace from input given position.”
         // 7. “Let candidate be the string that resulted from the previous step.”
         let candidate = '';
-        while (!AsciiWhitespace.includes(input[position])) {
+        while (!asciiWhitespace.includes(input[position])) {
             candidate += input[position];
             position++;
         }

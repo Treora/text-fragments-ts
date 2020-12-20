@@ -10,8 +10,8 @@ import {
     nextNode,
 } from './common.js';
 
-type nonNegativeInteger = number;
-type count = number;
+type NonNegativeInteger = number;
+type Count = number;
 
 
 // https://dom.spec.whatwg.org/#concept-tree-descendant
@@ -109,7 +109,7 @@ export function isShadowIncludingInclusiveAncestor(nodeA: Node, nodeB: Node): bo
 export function substringData(
     node: CharacterData, // XXX The spec says “node node”, but reads “node’s data” which is only defined for CharacterData nodes.
     offset: number,
-    count: count
+    count: Count
 ): string {
     // 1. “Let length be node’s length.”
     const length = nodeLength(node);
@@ -126,4 +126,4 @@ export function substringData(
 
 // https://dom.spec.whatwg.org/#concept-range-bp
 // “A boundary point is a tuple consisting of a node (a node) and an offset (a non-negative integer).”
-export type BoundaryPoint = [Node, nonNegativeInteger];
+export type BoundaryPoint = [Node, NonNegativeInteger];

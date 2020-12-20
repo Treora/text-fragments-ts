@@ -8,7 +8,7 @@
 
 
 import {
-    locale,
+    Locale,
     isElement,
     nextNode,
 } from './common.js';
@@ -29,12 +29,12 @@ import {
 } from './whatwg-html.js';
 
 import {
-    asciiString,
+    AsciiString,
     htmlNamespace,
 } from './whatwg-infra.js';
 
-type nonEmptyString = string;
-type integer = number;
+type NonEmptyString = string;
+type Integer = number;
 
 
 // § 3.3.1. Processing the fragment directive
@@ -48,7 +48,7 @@ export const fragmentDirectiveDelimiter = ':~:';
 // Instead of actually modifying the document’s URL fragment and fragment directive, this implementation returns the values these should have been set to. It therefore does not take the second argument. Also it expects to receive the URL as a string instead of as a URL object.
 export function processAndConsumeFragmentDirective(url: string): { url: string, documentFragmentDirective: string | null } {
     // “Each document has an associated fragment directive which is either null or an ASCII string holding data used by the UA to process the resource. It is initially null.”
-    let documentFragmentDirective: asciiString | null = null;
+    let documentFragmentDirective: AsciiString | null = null;
 
     // 1. “Let raw fragment be equal to url’s fragment.”
     // (as we only have access to the serialised URL, we extract the fragment again)
@@ -86,10 +86,10 @@ export function processAndConsumeFragmentDirective(url: string): { url: string, 
 // https://wicg.github.io/scroll-to-text-fragment/#parsedtextdirective
 // “A ParsedTextDirective is a struct that consists of four strings: textStart, textEnd, prefix, and suffix. textStart is required to be non-null. The other three items may be set to null, indicating they weren’t provided. The empty string is not a valid value for any of these items.”
 export interface ParsedTextDirective {
-    textStart: nonEmptyString;
-    textEnd: nonEmptyString | null;
-    prefix: nonEmptyString | null;
-    suffix: nonEmptyString | null;
+    textStart: NonEmptyString;
+    textEnd: NonEmptyString | null;
+    prefix: NonEmptyString | null;
+    suffix: NonEmptyString | null;
 };
 
 // https://wicg.github.io/scroll-to-text-fragment/#parse-a-text-directive
@@ -170,7 +170,7 @@ export function isValidFragmentDirective(input: string | null): input is ValidFr
 
 // https://wicg.github.io/scroll-to-text-fragment/#text-fragment-directive
 // “The text fragment directive is one such fragment directive that enables specifying a piece of text on the page, that matches the production:”
-export type TextDirective = asciiString; // should conform to the text directive grammar
+export type TextDirective = AsciiString; // should conform to the text directive grammar
 export function isTextFragmentDirective(input: string): input is TextDirective {
     // TODO (use PEG.js?)
     return input.startsWith('text='); // TEMP
@@ -373,7 +373,7 @@ export function scrollRangeIntoView(range: Range, behavior: ScrollBehavior, bloc
 // https://wicg.github.io/scroll-to-text-fragment/#process-a-fragment-directive
 
 // “To process a fragment directive, given as input an ASCII string fragment directive input and a Document document, run these steps:”
-export function processFragmentDirective(fragmentDirectiveInput: asciiString | null, document: Document): Range[] {
+export function processFragmentDirective(fragmentDirectiveInput: AsciiString | null, document: Document): Range[] {
     // 1. “If fragment directive input is not a valid fragment directive, then return an empty list.”
     if (!isValidFragmentDirective(fragmentDirectiveInput)) {
         return [];
@@ -858,7 +858,7 @@ export function findARangeFromANodeList(queryString: string, searchRange: Range,
 
 // https://wicg.github.io/scroll-to-text-fragment/#get-boundary-point-at-index
 // “To get boundary point at index, given an integer index, list of Text nodes nodes, and a boolean isEnd, follow these steps:”
-export function getBoundaryPointAtIndex(index: integer, nodes: Text[], isEnd: boolean): BoundaryPoint | null {
+export function getBoundaryPointAtIndex(index: Integer, nodes: Text[], isEnd: boolean): BoundaryPoint | null {
     // 1. “Let counted be 0.”
     let counted = 0;
 
@@ -898,7 +898,7 @@ export function getBoundaryPointAtIndex(index: integer, nodes: Text[], isEnd: bo
 
 // https://wicg.github.io/scroll-to-text-fragment/#is-at-a-word-boundary
 // “A number position is at a word boundary in a string text, given a locale locale, if, using locale, …”
-export function isAtWordBoundary(position: number, text: string, locale: locale) {
+export function isAtWordBoundary(position: number, text: string, locale: Locale) {
     // “…either a word boundary immediately precedes the positionth code unit, …”
     // TODO Implement the “default word boundary specification” of the referenced unicode spec.
     // TEMP Just use a regular expression to test against a pair of alphanumeric characters.
