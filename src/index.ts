@@ -4,7 +4,7 @@
 
 // An implementation of (most of) the Text Fragments draft spec.
 // See https://wicg.github.io/scroll-to-text-fragment/
-// Based on the version of 22 October 2020. <https://raw.githubusercontent.com/WICG/scroll-to-text-fragment/1c05e62b77f8f141d567dd287a2a42ea74870552/index.html>
+// Based on the version of 25 November 2020. <https://raw.githubusercontent.com/WICG/scroll-to-text-fragment/91e2a621a8690302f32ee5f4a18517b8c75c5495/index.html>
 
 
 import {
@@ -29,6 +29,7 @@ import {
 } from './whatwg-html.js';
 
 import {
+    asciiString,
     htmlNamespace,
 } from './whatwg-infra.js';
 
@@ -36,78 +37,63 @@ type nonEmptyString = string;
 type integer = number;
 
 
-// § 3.3.1. Parsing the fragment directive
+// § 3.3.1. Processing the fragment directive
 
 // https://wicg.github.io/scroll-to-text-fragment/#fragment-directive-delimiter
 // “The fragment directive delimiter is the string ":~:", that is the three consecutive code points U+003A (:), U+007E (~), U+003A (:).”
 export const fragmentDirectiveDelimiter = ':~:';
 
-// The function below implements most of the specified amendment to the ‘create and initialize a Document object’ steps. It applies the newly introduced steps on an ‘unmodified’ document. Instead of actually setting the document’s URL and fragment directive, it returns the values they should have obtained.
-// XXX Should the new procedure really “replace steps 7 and 8”? Which version of the HTML spec was this written for? In the version of 6 August 2020, steps 4, 5 and 9 seem more related.
-export function initializeDocumentFragmentDirective(document: Document): { documentUrl: string, documentFragmentDirective: string | null } {
-    // We mock the document’s URL and the document’s fragment directive using plain variables.
-    // As far as I can tell, we cannot access the document’s URL directly — only this serialised version (see <https://dom.spec.whatwg.org/#dom-document-url> as of 29 June 2020).
-    let documentUrl: string = document.URL;
+// https://wicg.github.io/scroll-to-text-fragment/#process-and-consume-fragment-directive
+// “To process and consume fragment directive from a URL url and Document document, run these steps:”
+// Instead of actually modifying the document’s URL fragment and fragment directive, this implementation returns the values these should have been set to. It therefore does not take the second argument. Also it expects to receive the URL as a string instead of as a URL object.
+export function processAndConsumeFragmentDirective(url: string): { url: string, documentFragmentDirective: string | null } {
     // “Each document has an associated fragment directive which is either null or an ASCII string holding data used by the UA to process the resource. It is initially null.”
-    let documentFragmentDirective: string | null = null;
+    let documentFragmentDirective: asciiString | null = null;
 
-    // 7. “Let url be null”
-    let url: string | null = null;
-
-    // XXX What is the idea of the new steps 8 and 9? These could at least use an explanatory note:
-    // 8. “If request is non-null, then set document’s URL to request’s current URL.”
-    // XXX should this perhaps be “url” instead of “document’s URL”? Otherwise we ignore the fragment directive completely.
-    // 9. “Otherwise, set url to response’s URL.”
-    // XXX should be “navigationParams's response”? Also, note its URL could be null.
-    // In any case, we deviate from the spec in these steps, to allow testing this implementation without access to the request and response. We just take the document’s URL instead.
-    url = documentUrl;
-
-    // 10. “Let raw fragment be equal to url’s fragment.”
+    // 1. “Let raw fragment be equal to url’s fragment.”
     // (as we only have access to the serialised URL, we extract the fragment again)
     const rawFragment = url.split('#')[1] ?? null;
 
-    // 11. “If raw fragment is non-null:”
-    if (rawFragment !== null) {
+    // 2. “If raw fragment is non-null and contains the fragment directive delimiter as a substring:”
+    if (rawFragment !== null && rawFragment.includes(fragmentDirectiveDelimiter)) {
+        // 1. “Let fragmentDirectivePosition be the index of the first instance of the fragment directive delimiter in raw fragment.”
+        let fragmentDirectivePosition = rawFragment.indexOf(fragmentDirectiveDelimiter);
 
-        // (a sane implementation would simply use rawFragment.indexOf(…) or rawFragment.split(…) instead the steps below)
-        // 1. “Let fragmentDirectivePosition be an integer initialized to 0.”
-        let fragmentDirectivePosition = 0;
+        // 2. “Let fragment be the substring of raw fragment starting at 0 of count fragmentDirectivePosition.”
+        const fragment = rawFragment.substring(0, 0 + fragmentDirectivePosition);
 
-        // 2. “While the substring of raw fragment starting at position fragmentDirectivePosition does not begin with the fragment directive delimiter and fragmentDirectivePosition does not point past the end of raw fragment:”
-        while (
-            !rawFragment.substring(fragmentDirectivePosition).startsWith(fragmentDirectiveDelimiter)
-            && !(fragmentDirectivePosition >= rawFragment.length)
-        ) {
-            // 1. “Increment fragmentDirectivePosition by 1.”
-            fragmentDirectivePosition += 1;
-        }
+        // 3. “Advance fragmentDirectivePosition by the length of fragment directive delimiter.”
+        fragmentDirectivePosition += fragmentDirectiveDelimiter.length;
 
-        // 3. “If fragmentDirectivePosition does not point past the end of raw fragment:”
-        if (!(fragmentDirectivePosition >= rawFragment.length)) {
-            // 1. “Let fragment be the substring of raw fragment starting at 0 of count fragmentDirectivePosition.”
-            const fragment = rawFragment.substring(0, 0 + fragmentDirectivePosition);
-            // 2. “Advance fragmentDirectivePosition by the length of fragment directive delimiter.”
-            fragmentDirectivePosition += fragmentDirectiveDelimiter.length;
-            // 3. “Let fragment directive be the substring of raw fragment starting at fragmentDirectivePosition.”
-            const fragmentDirective = rawFragment.substring(fragmentDirectivePosition);
-            // 4. “Set url’s fragment to fragment.”
-            // (as we only have access to the serialised URL, we manually replace its fragment part)
-            url = url.split('#')[0] + (fragment !== null) ? '#' + fragment : '';
-            // 5. “Set document’s fragment directive to fragment directive. (Note: this is stored on the document but not web-exposed)”
-            documentFragmentDirective = fragmentDirective;
-        }
+        // 4. “Let fragment directive be the substring of raw fragment starting at fragmentDirectivePosition.”
+        const fragmentDirective = rawFragment.substring(fragmentDirectivePosition);
 
+        // 5. “Set url’s fragment to fragment.”
+        // (as we only have access to the serialised URL, we manually replace its fragment part)
+        url = url.split('#')[0] + (fragment !== null) ? '#' + fragment : '';
+
+        // 6. “Set document’s fragment directive to fragment directive.”
+        documentFragmentDirective = fragmentDirective;
     }
 
-    // 12. “Set document’s URL to be url.”
-    documentUrl = url;
-
     // For testing/trying purposes, we return what should now be the document’s URL and fragment directive.
-    return { documentUrl, documentFragmentDirective };
+    return { url, documentFragmentDirective };
 }
 
+
+// § 3.3.2. Parsing the fragment directive
+
+// https://wicg.github.io/scroll-to-text-fragment/#parsedtextdirective
+// “A ParsedTextDirective is a struct that consists of four strings: textStart, textEnd, prefix, and suffix. textStart is required to be non-null. The other three items may be set to null, indicating they weren’t provided. The empty string is not a valid value for any of these items.”
+export interface ParsedTextDirective {
+    textStart: nonEmptyString;
+    textEnd: nonEmptyString | null;
+    prefix: nonEmptyString | null;
+    suffix: nonEmptyString | null;
+};
+
 // https://wicg.github.io/scroll-to-text-fragment/#parse-a-text-directive
-// “To parse a text directive, on a string text directive input, run these steps:”
+// “To parse a text directive, on an ASCII string text directive input, run these steps:”
 export function parseTextDirective(textDirectiveInput: TextDirective): ParsedTextDirective | null {
     // 1. “Assert: text directive input matches the production TextDirective.”
     // assert(isTextFragmentDirective(textDirectiveInput));
@@ -171,17 +157,8 @@ export function parseTextDirective(textDirectiveInput: TextDirective): ParsedTex
     return retVal as ParsedTextDirective;
 }
 
-// https://wicg.github.io/scroll-to-text-fragment/#parsedtextdirective
-// “A ParsedTextDirective is a struct that consists of four strings: textStart, textEnd, prefix, and suffix. textStart is required to be non-null. The other three items may be set to null, indicating they weren’t provided. The empty string is not a valid value for any of these items.”
-export interface ParsedTextDirective {
-    textStart: nonEmptyString;
-    textEnd: nonEmptyString | null;
-    prefix: nonEmptyString | null;
-    suffix: nonEmptyString | null;
-};
 
-
-// § 3.3.2. Fragment directive grammar
+// § 3.3.3. Fragment directive grammar
 
 // https://wicg.github.io/scroll-to-text-fragment/#valid-fragment-directive
 // “A valid fragment directive is a sequence of characters that appears in the fragment directive that matches the production:”
@@ -193,7 +170,7 @@ export function isValidFragmentDirective(input: string | null): input is ValidFr
 
 // https://wicg.github.io/scroll-to-text-fragment/#text-fragment-directive
 // “The text fragment directive is one such fragment directive that enables specifying a piece of text on the page, that matches the production:”
-export type TextDirective = string; // could be `unique string`, when (if) TypeScript will support that.
+export type TextDirective = asciiString; // should conform to the text directive grammar
 export function isTextFragmentDirective(input: string): input is TextDirective {
     // TODO (use PEG.js?)
     return input.startsWith('text='); // TEMP
@@ -223,7 +200,7 @@ export function scrollToTheFragment(indicatedPart: [Element, Range | null]): voi
     // 4. (new) “If range is non-null:”
     if (range !== null) {
         // 1. “If the UA supports scrolling of text fragments on navigation, invoke Scroll range into view, with range range, containingElement target, behavior set to "auto", block set to "center", and inline set to "nearest".”
-        scrollRangeIntoView(range, target, { behavior: 'auto', block: 'center', inline: 'nearest' });
+        scrollRangeIntoView(range, 'auto', 'center', 'nearest', target);
     }
 
     // 5. (new) “Otherwise:”
@@ -276,7 +253,7 @@ export function indicatedPartOfTheDocument_beginning(
 }
 
 // https://wicg.github.io/scroll-to-text-fragment/#first-common-ancestor
-// To find the first common ancestor of two nodes nodeA and nodeB, follow these steps:
+// “To find the first common ancestor of two nodes nodeA and nodeB, follow these steps:”
 export function firstCommonAncestor(nodeA: Node, nodeB: Node): Node | never {
     // 1. “Let commonAncestor be nodeA.”
     let commonAncestor = nodeA;
@@ -289,7 +266,8 @@ export function firstCommonAncestor(nodeA: Node, nodeB: Node): Node | never {
     return commonAncestor;
 }
 
-// To find the shadow-including parent of node follow these steps:
+// https://wicg.github.io/scroll-to-text-fragment/#shadow-including-parent
+// “To find the shadow-including parent of node follow these steps:”
 export function shadowIncludingParent(node: Node): Node | null {
     // 1. “If node is a shadow root, return node’s host.”
     if (node instanceof ShadowRoot)
@@ -305,7 +283,9 @@ export function shadowIncludingParent(node: Node): Node | null {
 // https://wicg.github.io/scroll-to-text-fragment/#scroll-a-domrect-into-view
 // “Move the scroll an element into view algorithm’s steps 3-14 into a new algorithm scroll a DOMRect into view, with input DOMRect bounding box, ScrollIntoViewOptions dictionary options, and element startingElement.”
 // “Also move the recursive behavior described at the top of the scroll an element into view algorithm to the scroll a DOMRect into view algorithm: "run these steps for each ancestor element or viewport of startingElement that establishes a scrolling box scrolling box, in order of innermost to outermost scrolling box".”
-export function scrollDomRectIntoView(boundingBox: DOMRect, options: ScrollIntoViewOptions, startingElement: Element): void {
+// “To scroll a DOMRect into view given a DOMRect bounding box, a scroll behavior behavior, a block flow direction position block, and an inline base direction position inline, and element startingElement, means to run these steps for each ancestor element or viewport of startingElement that establishes a scrolling box scrolling box, in order of innermost to outermost scrolling box:”
+export function scrollDomRectIntoView(boundingBox: DOMRect, behavior: ScrollBehavior, block: ScrollLogicalPosition, inline: ScrollLogicalPosition, startingElement: Element): void {
+    // “OMITTED”
     // TODO Create/borrow a complete implementation.
     // TEMP assume the window is the only scrolling box, block=vertical and inline=horizontal, …
     function applyScrollLogicalPosition({
@@ -345,7 +325,7 @@ export function scrollDomRectIntoView(boundingBox: DOMRect, options: ScrollIntoV
         return undefined;
     }
     const top = applyScrollLogicalPosition({
-        position: options.block ?? 'start', // presuming same default as for Element.scrollIntoView
+        position: block ?? 'start', // presuming same default as for Element.scrollIntoView
         boundingBoxRelativeEdgeBegin: boundingBox.top,
         boundingBoxRelativeEdgeEnd: boundingBox.bottom,
         scrollBoxAbsoluteEdgeBegin: window.scrollY,
@@ -353,58 +333,59 @@ export function scrollDomRectIntoView(boundingBox: DOMRect, options: ScrollIntoV
         scrollBoxSize: document.documentElement.clientHeight,
     });
     const left = applyScrollLogicalPosition({
-        position: options.inline ?? 'nearest', // presuming same default as for Element.scrollIntoView
+        position: inline ?? 'nearest', // presuming same default as for Element.scrollIntoView
         boundingBoxRelativeEdgeBegin: boundingBox.left,
         boundingBoxRelativeEdgeEnd: boundingBox.right,
         boundingBoxSize: boundingBox.width,
         scrollBoxAbsoluteEdgeBegin: window.scrollX,
         scrollBoxSize: document.documentElement.clientWidth,
     });
-    window.scroll({ top, left, behavior: options.behavior });
+    window.scroll({ top, left, behavior });
 }
 
 // “Replace steps 3-14 of the scroll an element into view algorithm with a call to scroll a DOMRect into view:”
-// (note the recursive behaviour is already removed due to the lines above)
-// Basing on the <https://drafts.csswg.org/cssom-view-1/#scroll-an-element-into-view> version of 20 February 2020
+// “To scroll an element into view element, with a scroll behavior behavior, a block flow direction position block, and an inline base direction position inline, means to run these steps:”
 export function scrollElementIntoView(element: Element, behavior: ScrollBehavior, block: ScrollLogicalPosition, inline: ScrollLogicalPosition) {
-    // 1. (from original) “If the Document associated with element is not same origin with the Document associated with the element or viewport associated with box, terminate these steps.”
+    // 1. “If the Document associated with element is not same origin with the Document associated with the element or viewport associated with box, terminate these steps.”
     // TODO (if this makes sense here at all?)
 
-    // 2. (from original) “Let element bounding border box be the box that the return value of invoking getBoundingClientRect() on element represents.”
+    // 2. “Let element bounding border box be the box that the return value of invoking getBoundingClientRect() on element represents.”
     const elementBoundingBorderBox = element.getBoundingClientRect();
 
-    // 3. (new) “Perform scroll a DOMRect into view given element bounding border box, options and element.”
-    // XXX There is no “options” defined; presumably that should be { behavior, block, inline }.
-    scrollDomRectIntoView(elementBoundingBorderBox, { behavior, block, inline }, element);
+    // 3. “Perform scroll a DOMRect into view given element bounding border box, options and element.”
+    // XXX There is no “options” defined; presumably that should be “behavior, block, inline”.
+    scrollDomRectIntoView(elementBoundingBorderBox, behavior, block, inline, element);
 }
 
 // https://wicg.github.io/scroll-to-text-fragment/#scroll-a-range-into-view
-// “Define a new algorithm scroll a Range into view, with input range range, element containingElement, and a ScrollIntoViewOptions dictionary options:”
-export function scrollRangeIntoView(range: Range, containingElement: Element, options: ScrollIntoViewOptions): void {
+// “To scroll a Range into view, with input range range, scroll behavior behavior, a block flow direction position block, an inline base direction position inline, and an element containingElement:”
+export function scrollRangeIntoView(range: Range, behavior: ScrollBehavior, block: ScrollLogicalPosition, inline: ScrollLogicalPosition, containingElement: Element): void {
     // 1. “Let bounding rect be the DOMRect that is the return value of invoking getBoundingClientRect() on range.”
     const boundingRect = range.getBoundingClientRect();
 
-    // 2. “Perform scroll a DOMRect into view given bounding rect, options, and containingElement.”
-    scrollDomRectIntoView(boundingRect, options, containingElement);
+    // 2. “Perform scroll a DOMRect into view given bounding rect, behavior, block, inline, and containingElement.”
+    scrollDomRectIntoView(boundingRect, behavior, block, inline, containingElement);
 }
 
 
 // § 3.5.2 Finding Ranges in a Document
 
 // https://wicg.github.io/scroll-to-text-fragment/#process-a-fragment-directive
-export function processFragmentDirective(fragmentDirectiveInput: string | null, document: Document): Range[] {
+
+// “To process a fragment directive, given as input an ASCII string fragment directive input and a Document document, run these steps:”
+export function processFragmentDirective(fragmentDirectiveInput: asciiString | null, document: Document): Range[] {
     // 1. “If fragment directive input is not a valid fragment directive, then return an empty list.”
     if (!isValidFragmentDirective(fragmentDirectiveInput)) {
         return [];
     }
 
-    // 2. “Let directives be a list of strings that is the result of strictly splitting the string fragment directive input on "&".”
+    // 2. “Let directives be a list of ASCII strings that is the result of strictly splitting the string fragment directive input on "&".”
     const directives = fragmentDirectiveInput.split('&');
 
     // 3. “Let ranges be a list of ranges, initially empty.”
     const ranges = [];
 
-    // 4. “For each string directive of directives:”
+    // 4. “For each ASCII string directive of directives:”
     for (const directive of directives) {
         // 1. “If directive does not match the production TextDirective, then continue.”
         if (!isTextFragmentDirective(directive))
@@ -799,6 +780,7 @@ export function nearestBlockAncestorOf(node: Node): Node {
 // “To find a range from a node list given a search string queryString, a range searchRange, a list of Text nodes nodes, and booleans wordStartBounded and wordEndBounded, follow these steps:”
 export function findARangeFromANodeList(queryString: string, searchRange: Range, nodes: Text[], wordStartBounded: boolean, wordEndBounded: boolean): Range | null {
     // 1. “Let searchBuffer be the concatenation of the data of each item in nodes.”
+    // “ISSUE 1 data is not correct here since that’s the text data as it exists in the DOM. This algorithm means to run over the text as rendered (and then convert back to Ranges in the DOM). <https://github.com/WICG/scroll-to-text-fragment/issues/98>”
     const searchBuffer = nodes.map(node => node.data).join('');
 
     // 2. “Let searchStart be 0.”

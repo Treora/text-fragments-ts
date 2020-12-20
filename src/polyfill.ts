@@ -5,7 +5,7 @@
 // This implementation assumes the browser has already performed the normal procedures to identify and scroll to the fragment, without support for Text Fragments.
 
 import {
-    initializeDocumentFragmentDirective,
+    processAndConsumeFragmentDirective,
     indicatedPartOfTheDocument_beginning,
     scrollToTheFragment,
     FragmentDirective,
@@ -13,10 +13,10 @@ import {
 } from './index.js';
 
 function run(): void {
-    const { documentUrl, documentFragmentDirective } = initializeDocumentFragmentDirective(document) ?? {};
-    if (documentUrl !== document.URL) {
+    const { url, documentFragmentDirective } = processAndConsumeFragmentDirective(document.URL);
+    if (url !== document.URL) {
         // We could change the location to hide the fragment directive from the fragment, as the spec prescribes; however this would also hide it from the user (and could trigger other event listeners).
-        // document.location.replace(documentUrl);
+        // document.location.replace(url);
     }
     applyFragmentDirective({ document, documentFragmentDirective });
 }
