@@ -584,12 +584,13 @@ export function advanceRangeStartToNextNonWhitespacePosition(range: Range) {
         // 7. “Otherwise”
         else {
             // 1. “Let cp be the code point at the offset index in node’s data.”
-            const cp = (node as CharacterData).data.codePointAt(offset) as number; // TODO verify if this is correct. We use the index to count code *units*, but we read the code *point*, which smells fishy but may be correct.
+            const cp = (node as CharacterData).data.codePointAt(offset) as number;
 
             // 2. “If cp does not have the White_Space property set, return.”
             if (!hasWhiteSpaceProperty(cp)) return;
 
             // 3. “Add 1 to range’s start offset.”
+            // XXX This implictly (but correctly) presumes that any character with the White_Space property is one code unit.
             range.setStart(range.startContainer, range.startOffset + 1);
         }
 
@@ -711,7 +712,7 @@ export function isSearchInvisible(node: Node): boolean {
             return true;
 
         // 3. “Is any of the following types: HTMLIFrameElement, HTMLImageElement, HTMLMeterElement, HTMLObjectElement, HTMLProgressElement, HTMLStyleElement, HTMLScriptElement, HTMLVideoElement, HTMLAudioElement”
-        if (['iframe', 'image', 'meter', 'object', 'progress', 'style', 'script', 'video', 'audio'].includes(node.localName)) // TODO verify: is this correct? Do class names and localName map one-to-one? (hopefully yes, as the term ‘element type’ seems used for both concepts)
+        if (['iframe', 'image', 'meter', 'object', 'progress', 'style', 'script', 'video', 'audio'].includes(node.localName))
             return true;
 
         // 4. “Is a select element whose multiple content attribute is absent.”
